@@ -1,0 +1,15 @@
+{
+  "server": "Servidor",
+  "channel": "Canal",
+  "listeners": "Ouvinte(s)",
+  "stream": "Ao vivo",
+  "loop_text": "Repetição ativada",
+  "loop_remaining": "Repetições restantes",
+  "paused": "Em pausa",
+  "listen": "Ouvir esta música",
+  "author": "Por",
+  "playlist": "",
+  "album": "Álbum",
+  "idle": ["\"Aguardando por\"", "\"novas músicas...\""],
+  "invite": "Me adicione no seu server."
+}

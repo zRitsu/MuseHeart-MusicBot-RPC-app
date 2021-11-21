@@ -1,0 +1,15 @@
+{
+  "server": "Server",
+  "channel": "Channel",
+  "listeners": "Listener(s)",
+  "stream": "Live",
+  "loop_text": "Looping",
+  "loop_remaining": "Remaining track loops",
+  "paused": "Paused",
+  "listen": "Listen/Watch",
+  "author": "By",
+  "playlist": "Playlist",
+  "album": "Album",
+  "idle": ["\"Idling...\"", "Waiting for new songs..."],
+  "invite": "Invite"
+}
