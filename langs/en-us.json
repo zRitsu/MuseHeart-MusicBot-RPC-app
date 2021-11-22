@@ -10,6 +10,6 @@
   "author": "By",
   "playlist": "Playlist",
   "album": "Album",
-  "idle": ["\"Idling...\"", "Waiting for new songs..."],
+  "idle": ["Idling...", "Waiting for new songs..."],
   "invite": "Invite"
 }
