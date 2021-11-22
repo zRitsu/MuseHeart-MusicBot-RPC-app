@@ -115,3 +115,8 @@ dmypy.json
 .idea/
 .vscode/
 config.json
+
+#build files
+build.py
+icon.ico
+build.bat

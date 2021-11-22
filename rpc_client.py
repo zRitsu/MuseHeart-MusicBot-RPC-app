@@ -10,9 +10,9 @@ from traceback import print_exc
 import threading
 
 with open("config.json") as f:
-    data = json.load(f)
+    config = json.load(f)
 
-urls = list(set([u["url"] for u in data["data"]]))
+urls = list(set([u["url"] for u in config["data"]]))
 
 rpc_clients = {}
 
@@ -54,10 +54,10 @@ class RpcTest:
         self.delay = 7
         self.clients = {}
         self.loop = asyncio.get_event_loop()
-        self.lang = data["language"]
+        self.lang = config["language"]
         self.task = None
         self.exiting = False
-        self.bot_ids = {d["app_id"]: d["bot_id"] for d in data["data"]}
+        self.bot_ids = {d["app_id"]: d["bot_id"] for d in config["data"]}
 
     def boot(self):
         try:
@@ -92,7 +92,7 @@ class RpcTest:
                     return
                 self.user_id = self.rpc[str(client_id)].data['data']['user']['id']
                 self.user = f"{self.rpc[str(client_id)].data['data']['user']['username']}#{self.rpc[str(client_id)].data['data']['user']['discriminator']}"
-                print(f"bot id: {client_id}] RPC conectado: {self.user} [{self.user_id}] pipe: {self.pipe}")
+                print(f"RPC conectado: {self.user} [{self.user_id}] pipe: {self.pipe} | Bot ID: {client_id}]")
 
     async def check_rpc(self):
 
@@ -366,23 +366,25 @@ class RpcTest:
                         print(f"unknow op: {msg.data}")
 
         except websockets.ConnectionClosed as e:
-            print(f'Conexão perdida com o servidor remoto! Error code: {e.code} {e.reason}')
+
+            print(f'Conexão perdida com o servidor: {url} | Erro: {e.code} {e.reason}')
+
+            for d in config["data"]:
+                if d["url"] == url and d["bot_id"] in self.bot_ids:
+                    self.rpc_info[d["bot_id"]].clear()
+                    try:
+                        self.rpc[d["bot_id"]].clear()
+                    except:
+                        continue
 
             if e.code == 1006:
-                self.delay *= 2
+
                 print(f"tentando novamente em {rpc.delay} segundos")
-                for bot_id in self.bot_ids.values():
-                    self.rpc_info[bot_id].clear()
-                    try:
-                        self.rpc[bot_id].clear()
-                    except:
-                        pass
+
                 await asyncio.sleep(self.delay)
+                self.delay *= 2
                 await self.connect()
-            else:
-                for bot_id in self.bot_ids.values():
-                    self.rpc_info[bot_id].clear()
-                    self.rpc[bot_id].clear()
+
         except Exception as e:
             if not isinstance(e, ConnectionRefusedError):
                 print(f"Fatal Error Type 1: {type(e)} url: {url}")
