@@ -57,7 +57,7 @@ class RpcTest:
         self.lang = config["language"]
         self.task = None
         self.exiting = False
-        self.bot_ids = {d["app_id"]: d["bot_id"] for d in config["data"]}
+        self.bot_ids = [d["bot_id"] for d in config["data"]]
 
     def boot(self):
         try:
@@ -70,7 +70,7 @@ class RpcTest:
             traceback.print_exc()
             raise Exception
 
-    async def destroy(self, bot_id):
+    async def destroy(self, bot_id: str):
         self.time = None
         try:
             self.rpc[bot_id].disconnect()
@@ -80,31 +80,31 @@ class RpcTest:
     async def start(self):
         await self.check_rpc()
 
-        for client_id in self.bot_ids.values():
-            if not self.rpc[str(client_id)].connected:
+        for bot_id in self.bot_ids:
+            if not self.rpc[bot_id].connected:
                 try:
-                    self.rpc[str(client_id)].connect()
+                    self.rpc[bot_id].connect()
                 except Exception:
-                    await self.destroy(client_id)
+                    await self.destroy(bot_id)
                     del rpc_clients[self.pipe]
                     self.task.cancel()
                     self.exiting = True
                     return
-                self.user_id = self.rpc[str(client_id)].data['data']['user']['id']
-                self.user = f"{self.rpc[str(client_id)].data['data']['user']['username']}#{self.rpc[str(client_id)].data['data']['user']['discriminator']}"
-                print(f"RPC conectado: {self.user} [{self.user_id}] pipe: {self.pipe} | Bot ID: {client_id}]")
+                self.user_id = self.rpc[bot_id].data['data']['user']['id']
+                self.user = f"{self.rpc[bot_id].data['data']['user']['username']}#{self.rpc[bot_id].data['data']['user']['discriminator']}"
+                print(f"RPC conectado: {self.user} [{self.user_id}] pipe: {self.pipe} | Bot ID: {bot_id}]")
 
     async def check_rpc(self):
 
         if not self.rpc_id:
-            self.rpc_id = list(self.bot_ids.values())[0]
+            self.rpc_id = self.bot_ids[0]
 
-        for bot_id, client_id in list(self.bot_ids.items()):
-            if self.rpc.get(client_id):
+        for bot_id in self.bot_ids:
+            if self.rpc.get(bot_id):
                 continue
             try:
                 try:
-                    self.rpc[client_id] = DiscordIPC(self.bot_ids[bot_id], pipe=self.pipe)
+                    self.rpc[bot_id] = DiscordIPC(bot_id, pipe=self.pipe)
                 except:
                     traceback.print_exc()
                     del rpc_clients[self.pipe]
@@ -282,7 +282,7 @@ class RpcTest:
 
         if self.exiting:
             return
-        
+
         for url in urls:
             self.clients[url] = self.loop.create_task(self.connect_ws(url))
 

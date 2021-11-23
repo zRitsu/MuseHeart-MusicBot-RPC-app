@@ -3,7 +3,6 @@
   "data": [
     {
       "bot_id": "id do bot",
-      "app_id": "id do app do bot (geralmente é o id do bot)",
       "url": "ws://url:porta/ws"
     }
   ]
