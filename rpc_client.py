@@ -60,15 +60,11 @@ class RpcTest:
         self.bot_ids = [d["bot_id"] for d in config["data"]]
 
     def boot(self):
-        try:
-            if not self.loop.is_running():
-                self.task = self.loop.run_until_complete(self.connect())
-                self.task = self.loop.run_forever()
-            else:
-                self.task = self.loop.create_task(self.connect())
-        except Exception:
-            traceback.print_exc()
-            raise Exception
+        if not self.loop.is_running():
+            self.task = self.loop.run_until_complete(self.connect())
+            self.task = self.loop.run_forever()
+        else:
+            self.task = self.loop.create_task(self.connect())
 
     async def destroy(self, bot_id: str):
         self.time = None
@@ -119,7 +115,6 @@ class RpcTest:
         try:
             self.rpc[bot_id].disconnect()
         except Exception as e:
-            print(f"Fatal Error Type 1: {type(e)}")
             traceback.print_exc()
 
     def get_lang(self, key: str) -> str:
@@ -389,13 +384,16 @@ class RpcTest:
             if not isinstance(e, ConnectionRefusedError):
                 print(f"Fatal Error Type 1: {type(e)} url: {url}")
                 traceback.print_exc()
-            try:
-                self.clients[url].cancel()
-            except:
-                pass
-            del self.clients[url]
-            if not self.clients:
-                self.loop.close()
+            #try:
+            #    self.clients[url].cancel()
+            #except:
+            #    pass
+            #del self.clients[url]
+            #if not self.clients:
+            #    self.loop.close()
+
+            await asyncio.sleep(self.delay)
+            self.delay *= 2
 
 
 for i in range(9):
