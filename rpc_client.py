@@ -247,7 +247,7 @@ class RpcTest:
                     state += f'{self.get_lang("playlist")}: {pl_name}'
 
                 elif ab_url:
-                    ab_final = f'{self.get_lang("album")}: {ab_name}' if len(ab_name) < 20 else ab_name
+                    ab_final = f'{self.get_lang("album")}: {ab_name}' if len(ab_name) < 21 else ab_name
                     buttons.append({"label": fix_characters(ab_final, 30), "url": ab_url.replace("www.", "")})
 
             if not state:
