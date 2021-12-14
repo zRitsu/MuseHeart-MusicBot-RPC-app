@@ -10,6 +10,6 @@
   "author": "Por",
   "playlist": "",
   "album": "Álbum",
-  "idle": ["\"Aguardando por\"", "\"novas músicas...\""],
+  "idle": ["Aguardando por", "novas músicas..."],
   "invite": "Me adicione no seu server."
 }

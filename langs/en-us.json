@@ -1,7 +1,7 @@
 {
   "server": "Server",
   "channel": "Channel",
-  "listeners": "Listener's",
+  "listeners": "Listeners",
   "stream": "Live",
   "loop_text": "Looping",
   "loop_remaining": "Remaining track loops",

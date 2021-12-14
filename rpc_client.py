@@ -159,7 +159,7 @@ class RpcTest:
         if info and track:
 
             m = info["members"]
-            
+
             payload['assets']['large_text'] = self.get_lang("server") + f': {info["guild"]["name"]} | ' + self.get_lang("channel") + f': #{info["channel"]["name"]} | ' + self.get_lang("listeners") + f': {m}'
             payload['details'] = track["title"]
 
@@ -343,6 +343,7 @@ class RpcTest:
 
                         try:
                             m = data["info"]["members"]
+
                             data['assets']['large_text'] = self.get_lang("server") + f': {data["info"]["guild"]["name"]} | ' + \
                                                            self.get_lang("channel") + f': #{data["info"]["channel"]["name"]} | ' + \
                                                            self.get_lang("listeners") + f': {m}'
@@ -366,12 +367,18 @@ class RpcTest:
             print(f'Conexão perdida com o servidor: {url} | Erro: {e.code} {e.reason}')
 
             for d in config["data"]:
-                if d["url"] == url and d["bot_id"] in self.bot_ids:
-                    self.rpc_info[d["bot_id"]].clear()
-                    try:
-                        self.rpc[d["bot_id"]].clear()
-                    except:
-                        continue
+                try:
+                    if d["url"] == url and d["bot_id"] in self.bot_ids:
+                        try:
+                            self.rpc_info[d["bot_id"]].clear()
+                        except KeyError:
+                            pass
+                        try:
+                            self.rpc[d["bot_id"]].clear()
+                        except:
+                            continue
+                except:
+                    traceback.print_exc()
 
             if e.code == 1006:
 
