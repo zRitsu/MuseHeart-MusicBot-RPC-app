@@ -11,6 +11,7 @@
   "playlist": "Playlist",
   "view_playlist": "View Playlist",
   "album": "Album",
+  "view_album": "View Album",
   "idle": ["Idling...", "Waiting for new songs..."],
   "invite": "Invite"
 }

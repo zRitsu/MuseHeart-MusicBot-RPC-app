@@ -11,6 +11,7 @@
   "playlist": "",
   "view_playlist": "Ver Playlist",
   "album": "Álbum",
+  "view_album": "Ver Álbum",
   "idle": ["Aguardando por", "novas músicas..."],
   "invite": "Me adicione no seu server."
 }
