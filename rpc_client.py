@@ -276,7 +276,7 @@ class RpcTest:
 
                     if (ab_size:=len(ab_name)) > 21:
                         state += f' | {self.get_lang("album")}: {ab_name}'
-                        buttons.append({"label": self.get_lang("view_album"), "url": pl_url.replace("www.", "")})
+                        buttons.append({"label": self.get_lang("view_album"), "url": ab_url.replace("www.", "")})
 
                     else:
 
