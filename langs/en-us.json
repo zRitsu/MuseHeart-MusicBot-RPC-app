@@ -9,6 +9,7 @@
   "listen": "Listen/Watch",
   "author": "By",
   "playlist": "Playlist",
+  "view_playlist": "View Playlist",
   "album": "Album",
   "idle": ["Idling...", "Waiting for new songs..."],
   "invite": "Invite"

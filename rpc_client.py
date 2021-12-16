@@ -26,6 +26,22 @@ for f in os.listdir("./langs"):
     with open(f"./langs/{f}", encoding="utf-8") as file:
         langs[f[:-5]] = json.load(file)
 
+replaces = [
+    ('&quot;', '"'),
+    ('&amp;', '&'),
+    ('(', '\u0028'),
+    (')', '\u0029'),
+    ('[', '【'),
+    (']', '】'),
+    ("  ", " "),
+    ("*", '"'),
+    ("_", ' '),
+    ("{", "\u0028"),
+    ("}", "\u0029"),
+    ("`", "'")
+]
+
+
 def get_thumb(url):
 
     if "youtube.com" in url:
@@ -36,6 +52,10 @@ def get_thumb(url):
         return ["soundcloud", "Soundcloud"]
 
 def fix_characters(text: str, limit=30):
+
+    for r in replaces:
+        text = text.replace(r[0], r[1])
+
     if len(text) > limit:
         return f"{text[:limit - 3]}..."
     return text
@@ -235,10 +255,16 @@ class RpcTest:
                     if 'youtube.com' in pl_url:
                         pl_url = "https://www.youtube.com/playlist?list=" + (pl_url.split('?list=' if '?list=' in pl_url else '&list='))[1]
 
-                    pl_title = f"Playlist: {pl_name}"
-                    if len(pl_title) > 30:
-                        pl_title = pl_name
-                    buttons.append({"label": fix_characters(pl_title), "url": pl_url.replace("www.", "")})
+                    if (pl_size:=len(pl_name)) > 21:
+                        state += f' | {self.get_lang("playlist")}: {pl_name}'
+                        buttons.append({"label": self.get_lang("view_playlist"), "url": pl_url.replace("www.", "")})
+
+                    else:
+
+                        if pl_size < 15:
+                            pl_name = f"Playlist: {pl_name}"
+
+                        buttons.append({"label": pl_name, "url": pl_url.replace("www.", "")})
 
                 elif state and pl_name:
                     state += f' | {pl_name}'

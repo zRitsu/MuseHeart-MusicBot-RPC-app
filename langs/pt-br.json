@@ -9,6 +9,7 @@
   "listen": "Ouvir esta música",
   "author": "Por",
   "playlist": "",
+  "view_playlist": "Ver Playlist",
   "album": "Álbum",
   "idle": ["Aguardando por", "novas músicas..."],
   "invite": "Me adicione no seu server."
