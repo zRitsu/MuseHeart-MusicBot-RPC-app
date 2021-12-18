@@ -1,30 +1,25 @@
+import asyncio
+import json
+import datetime
+import time
+import traceback
 import os
 import websockets
-import asyncio
-import traceback
 from discoIPC.ipc import DiscordIPC
-import json
-import time
-import datetime
-from traceback import print_exc
-import threading
+
+class MyDiscordIPC(DiscordIPC):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.user = ""
+
 
 with open("config.json") as f:
     config = json.load(f)
 
-urls = list(set([u["url"] for u in config["data"]]))
+user_clients = {}
 
-rpc_clients = {}
-
-langs = {}
-
-for f in os.listdir("./langs"):
-
-    if not f.endswith(".json"):
-        continue
-
-    with open(f"./langs/{f}", encoding="utf-8") as file:
-        langs[f[:-5]] = json.load(file)
+dummy_app = "921606662467498045"
 
 replaces = [
     ('&quot;', '"'),
@@ -41,9 +36,9 @@ replaces = [
     ("`", "'")
 ]
 
+langs = {}
 
 def get_thumb(url):
-
     if "youtube.com" in url:
         return ["yt", "Youtube"]
     if "spotify.com" in url:
@@ -51,8 +46,8 @@ def get_thumb(url):
     if "soundcloud.com" in url:
         return ["soundcloud", "Soundcloud"]
 
-def fix_characters(text: str, limit=30):
 
+def fix_characters(text: str, limit=30):
     for r in replaces:
         text = text.replace(r[0], r[1])
 
@@ -61,109 +56,71 @@ def fix_characters(text: str, limit=30):
     return text
 
 
-class RpcTest:
+for f in os.listdir("./langs"):
 
-    def __init__(self, pipe=0):
-        self.rpc = {}
-        self.pipe = pipe
-        self.user_id = ""
-        self.user = ""
-        self.time = None
-        self.rpc_id = None
-        self.rpc_info = {}
-        self.delay = 7
-        self.clients = {}
-        self.loop = asyncio.get_event_loop()
+    if not f.endswith(".json"):
+        continue
+
+    with open(f"./langs/{f}", encoding="utf-8") as file:
+        langs[f[:-5]] = json.load(file)
+
+
+for i in range(10):
+
+    try:
+        rpc = MyDiscordIPC(dummy_app, pipe=i)
+        rpc.connect()
+        rpc.disconnect()
+    except:
+        continue
+
+    user_id = rpc.data['data']['user']['id']
+    user = f"{rpc.data['data']['user']['username']}#{rpc.data['data']['user']['discriminator']}"
+    user_clients[int(user_id)] = {"pipe": i, "user": user}
+    rpc.user = user
+    print(f"RPC conectado: {user} [{user_id}] pipe: {i}")
+
+
+class RpcClient:
+
+    def __init__(self):
+
         self.lang = config["language"]
-        self.task = None
-        self.exiting = False
-        self.bot_ids = [d["bot_id"] for d in config["data"]]
 
-    def boot(self):
-        if not self.loop.is_running():
-            self.task = self.loop.run_until_complete(self.connect())
-            self.task = self.loop.run_forever()
-        else:
-            self.task = self.loop.create_task(self.connect())
+        self.users_rpc = {
+            # user -> {bot: presence}
+        }
 
-    async def destroy(self, bot_id: str):
-        self.time = None
-        try:
-            self.rpc[bot_id].disconnect()
-        except Exception:
-            pass
+    def get_bot_rpc(self, bot_id: int, pipe: int) -> MyDiscordIPC:
 
-    async def start(self):
-        await self.check_rpc()
+        rpc = MyDiscordIPC(str(bot_id), pipe=pipe)
+        rpc.connect()
+        return rpc
 
-        for bot_id in self.bot_ids:
-            if not self.rpc[bot_id].connected:
-                try:
-                    self.rpc[bot_id].connect()
-                except Exception:
-                    await self.destroy(bot_id)
-                    del rpc_clients[self.pipe]
-                    self.task.cancel()
-                    self.exiting = True
-                    return
-                self.user_id = self.rpc[bot_id].data['data']['user']['id']
-                self.user = f"{self.rpc[bot_id].data['data']['user']['username']}#{self.rpc[bot_id].data['data']['user']['discriminator']}"
-                print(f"RPC conectado: {self.user} [{self.user_id}] pipe: {self.pipe} | Bot ID: {bot_id}]")
+    def check_presence(self, user_id: int, bot_id: int):
 
-    async def check_rpc(self):
-
-        if not self.rpc_id:
-            self.rpc_id = self.bot_ids[0]
-
-        for bot_id in self.bot_ids:
-            if self.rpc.get(bot_id):
-                continue
+        if not (self.users_rpc.get(user_id)):
             try:
-                try:
-                    self.rpc[bot_id] = DiscordIPC(bot_id, pipe=self.pipe)
-                except:
-                    traceback.print_exc()
-                    del rpc_clients[self.pipe]
-                    self.task.cancel()
-                    self.exiting = True
+                rpc = self.get_bot_rpc(bot_id, user_clients[user_id]["pipe"])
+                self.users_rpc[user_id] = {bot_id: rpc}
+                return
             except:
-                continue
-
-    async def teardown(self, bot_id):
-        self.user_id = ""
-        await self.check_rpc()
-        try:
-            self.rpc[bot_id].disconnect()
-        except Exception as e:
-            traceback.print_exc()
-
-    def get_lang(self, key: str) -> str:
+                pass
 
         try:
-            lang = langs[self.lang]
-            txt: str = lang.get(key)
-            if not txt:
-                txt = langs["en-us"].get(key)
+            user_apps = self.users_rpc[user_id][bot_id]
+            if not user_apps.connected:
+                user_apps.connect()
         except KeyError:
-            txt = langs["en-us"].get(key)
-        return txt
-
-    async def update(self, bot_id):
-
-        await self.check_rpc()
-        if not self.rpc.get(bot_id):
             try:
-                await self.start()
-            except:
-                print_exc()
-                await self.teardown(bot_id)
+                rpc = self.get_bot_rpc(bot_id, user_clients[user_id]["pipe"])
+                self.users_rpc[user_id][bot_id] = rpc
+            except FileNotFoundError:
                 return
 
-        if not self.rpc[bot_id].connected:
-            self.rpc[bot_id].connect()
+    def update(self, user_id: int, bot_id: int, data: dict):
 
-        if not self.time:
-            self.time = time.time()
+        self.check_presence(user_id, bot_id)
 
         payload = {
             "assets": {
@@ -172,15 +129,16 @@ class RpcTest:
             "timestamps": {}
         }
 
-        track = self.rpc_info[bot_id].pop("track", None)
+        track = data.pop("track", None)
 
-        info = self.rpc_info[bot_id].pop("info")
+        info = data.pop("info", None)
 
         if info and track:
 
             m = info["members"]
 
-            payload['assets']['large_text'] = self.get_lang("server") + f': {info["guild"]["name"]} | ' + self.get_lang("channel") + f': #{info["channel"]["name"]} | ' + self.get_lang("listeners") + f': {m}'
+            payload['assets']['large_text'] = self.get_lang("server") + f': {info["guild"]["name"]} | ' + self.get_lang(
+                "channel") + f': #{info["channel"]["name"]} | ' + self.get_lang("listeners") + f': {m}'
             payload['details'] = track["title"]
 
             if track["stream"]:
@@ -192,7 +150,8 @@ class RpcTest:
                 if not track["stream"]:
                     startTime = datetime.datetime.now(datetime.timezone.utc)
 
-                    endtime = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(milliseconds=track["duration"] - track["position"]))
+                    endtime = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(
+                        milliseconds=track["duration"] - track["position"]))
 
                     payload['timestamps']['end'] = int(endtime.timestamp())
                     payload['timestamps']['start'] = int(startTime.timestamp())
@@ -201,16 +160,15 @@ class RpcTest:
 
                     if repeat:
 
-
                         if isinstance(repeat, list):
                             repeat_string = f"{self.get_lang('loop_text')}: {repeat[0]}/{repeat[1]}."
                         elif isinstance(repeat, int):
                             repeat_string = f"{self.get_lang('loop_remaining')}: {repeat}"
                         else:
                             repeat_string = self.get_lang("loop_text")
-                        
+
                         payload['assets']['small_image'] = "loop"
-                        payload['assets']['small_text'] =  repeat_string
+                        payload['assets']['small_text'] = repeat_string
 
                     else:
 
@@ -253,9 +211,10 @@ class RpcTest:
                 if pl_name and pl_url:
 
                     if 'youtube.com' in pl_url:
-                        pl_url = "https://www.youtube.com/playlist?list=" + (pl_url.split('?list=' if '?list=' in pl_url else '&list='))[1]
+                        pl_url = "https://www.youtube.com/playlist?list=" + \
+                                 (pl_url.split('?list=' if '?list=' in pl_url else '&list='))[1]
 
-                    if (pl_size:=len(pl_name)) > 21:
+                    if (pl_size := len(pl_name)) > 21:
                         state += f' | {self.get_lang("playlist")}: {pl_name}'
                         buttons.append({"label": self.get_lang("view_playlist"), "url": pl_url.replace("www.", "")})
 
@@ -274,7 +233,7 @@ class RpcTest:
 
                 elif ab_url:
 
-                    if (ab_size:=len(ab_name)) > 21:
+                    if (ab_size := len(ab_name)) > 21:
                         state += f' | {self.get_lang("album")}: {ab_name}'
                         buttons.append({"label": self.get_lang("view_album"), "url": ab_url.replace("www.", "")})
 
@@ -293,170 +252,113 @@ class RpcTest:
             if buttons:
                 payload["buttons"] = buttons
 
+            self.users_rpc[user_id][bot_id].update_activity(payload)
+
         else:
-            self.rpc[bot_id].clear()
+            self.users_rpc[user_id][bot_id].clear()
             return
 
-        self.rpc[bot_id].update_activity(payload)
 
-    async def connect(self):
-        try:
-            await self.start()
-        except Exception as e:
-            if not isinstance(e, FileNotFoundError):
-                traceback.print_exc()
-            else:
-                self.task.cancel()
-                self.exiting = True
-                del rpc_clients[self.pipe]
-            return
-
-        if self.exiting:
-            return
-
-        for url in urls:
-            self.clients[url] = self.loop.create_task(self.connect_ws(url))
-
-    async def connect_ws(self, url):
-    
-        if self.exiting:
-            return
+    def get_lang(self, key: str) -> str:
 
         try:
-            ws = await websockets.connect(url)
-            a = {"user_id": self.user_id}
-            await ws.send(json.dumps(a))
+            lang = langs[self.lang]
+            txt: str = lang.get(key)
+            if not txt:
+                txt = langs["en-us"].get(key)
+        except KeyError:
+            txt = langs["en-us"].get(key)
+        return txt
 
-            while True:
-                msg = await ws.recv()
-                try:
-                    data = json.loads(msg)
-                except Exception:
-                    traceback.print_exc()
-                    continue
-                op = data.pop("op")
-                public = data.pop("public", True)
-                bot_id = str(data.get("bot_id"))
 
-                print(f"op: {op} | {self.user} [{self.user_id}] | bot: {bot_id}")
+    async def handle_socket(self, uri):
 
-                match op:
+        while True:
 
-                    case "update":
-                        self.rpc_info[bot_id] = data
-                        await self.update(bot_id)
+            try:
+                async with websockets.connect(uri) as ws:
 
-                    case "idle":
+                    for i in user_clients:
+                        await ws.send(json.dumps({"user_id": i}))
+
+                    async for msg in ws:
 
                         try:
-                            self.rpc_info[bot_id].clear()
-                        except KeyError:
-                            await self.check_rpc()
-
-                        text_idle = self.get_lang("idle")
-
-                        data = {
-                            "assets": {
-                                "large_image": "app"
-                            },
-                            "details": text_idle[0],
-
-                        }
-
-                        if len(text_idle) > 1:
-                            data['state'] = text_idle[1]
-
-                        if public:
-                            invite = f"https://discord.com/api/oauth2/authorize?client_id={bot_id}&permissions=8&scope=bot%20applications.commands"
-
-                            data["buttons"] = [
-                                {
-                                    "label": self.get_lang("invite"),
-                                    "url": invite
-                                }
-                            ]
-
-                        try:
-                            m = data["info"]["members"]
-
-                            data['assets']['large_text'] = self.get_lang("server") + f': {data["info"]["guild"]["name"]} | ' + \
-                                                           self.get_lang("channel") + f': #{data["info"]["channel"]["name"]} | ' + \
-                                                           self.get_lang("listeners") + f': {m}'
-                        except KeyError:
-                            pass
-                        self.rpc_info[bot_id] = data
-                        self.rpc[bot_id].update_activity(data)
-
-                    case "close":
-                        try:
-                            self.rpc[bot_id].clear()
-                        except KeyError:
-                            pass
-                        self.rpc_info[bot_id] = {}
-
-                    case _:
-                        print(f"unknow op: {msg.data}")
-
-        except websockets.ConnectionClosed as e:
-
-            print(f'Conexão perdida com o servidor: {url} | Erro: {e.code} {e.reason}')
-
-            for d in config["data"]:
-                try:
-                    if d["url"] == url and d["bot_id"] in self.bot_ids:
-                        try:
-                            self.rpc_info[d["bot_id"]].clear()
-                        except KeyError:
-                            pass
-                        try:
-                            self.rpc[d["bot_id"]].clear()
-                        except:
+                            data = json.loads(msg)
+                        except Exception:
+                            traceback.print_exc()
                             continue
-                except:
-                    traceback.print_exc()
 
-            if e.code == 1006:
+                        user_id = data.pop("user", None)
+                        if not user_id:
+                            continue
 
-                print(f"tentando novamente em {rpc.delay} segundos")
+                        op = data.pop("op")
+                        public = data.pop("public", True)
+                        bot_id = data.get("bot_id")
+                        user = user_clients[user_id]["user"]
 
-                await asyncio.sleep(self.delay)
-                self.delay *= 2
-                await self.connect()
+                        print(f"op: {op} | {user} [{user_id}] | bot: {bot_id}")
 
-        except Exception as e:
-            if not isinstance(e, ConnectionRefusedError):
-                print(f"Fatal Error Type 1: {type(e)} url: {url}")
+                        match op:
+
+                            case "update":
+
+                                self.update(user_id, bot_id, data)
+
+                            case "idle":
+
+                                text_idle = self.get_lang("idle")
+
+                                data = {
+                                    "assets": {
+                                        "large_image": "app"
+                                    },
+                                    "details": text_idle[0],
+
+                                }
+
+                                if len(text_idle) > 1:
+                                    data['state'] = text_idle[1]
+
+                                if public:
+                                    invite = f"https://discord.com/api/oauth2/authorize?client_id={bot_id}&permissions=8&scope=bot%20applications.commands"
+
+                                    data["buttons"] = [
+                                        {
+                                            "label": self.get_lang("invite"),
+                                            "url": invite
+                                        }
+                                    ]
+
+                                try:
+                                    m = data["info"]["members"]
+
+                                    data['assets']['large_text'] = self.get_lang(
+                                        "server") + f': {data["info"]["guild"]["name"]} | ' + \
+                                                                   self.get_lang(
+                                                                       "channel") + f': #{data["info"]["channel"]["name"]} | ' + \
+                                                                   self.get_lang("listeners") + f': {m}'
+                                except KeyError:
+                                    pass
+                                self.update(user_id, bot_id, data)
+
+                            case "close":
+                                self.update(user_id, bot_id, {})
+
+                            case _:
+                                print(f"unknow op: {msg.data}")
+
+
+            except (websockets.ConnectionClosedError, ConnectionRefusedError, ConnectionResetError, OSError):
+                print(f"Conexão perdida com o servidor: {uri} | Reconectando em 60seg.")
+                await asyncio.sleep(60)
+            except Exception as e:
                 traceback.print_exc()
-            #try:
-            #    self.clients[url].cancel()
-            #except:
-            #    pass
-            #del self.clients[url]
-            #if not self.clients:
-            #    self.loop.close()
+                print(f"Erro na conexão: {uri} | {repr(e)}")
+                await asyncio.sleep(60)
 
-            await asyncio.sleep(self.delay)
-            self.delay *= 2
+    async def handler(self):
+        await asyncio.wait([asyncio.create_task(self.handle_socket(uri)) for uri in config["urls"]])
 
-
-for i in range(9):
-
-    rpc = RpcTest(i)
-
-    def start_rpc():
-        try:
-            rpc.boot()
-            rpc_clients[i] = rpc
-        except Exception as e:
-            print(f"Fatal Error Type 3: {type(e)}")
-            traceback.print_exc()
-            del rpc_clients[i]
-            raise Exception
-
-    try:
-        threading.Thread(target=start_rpc).start()
-    except (Exception, FileNotFoundError):
-        continue
-
-while rpc_clients:
-    time.sleep(15)
+asyncio.get_event_loop().run_until_complete(RpcClient().handler())
