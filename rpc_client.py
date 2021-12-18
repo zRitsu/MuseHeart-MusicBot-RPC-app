@@ -122,6 +122,10 @@ class RpcClient:
 
         self.check_presence(user_id, bot_id)
 
+        if not data:
+            self.users_rpc[user_id][bot_id].clear()
+            return
+
         payload = {
             "assets": {
                 "large_image": "app"
@@ -132,6 +136,8 @@ class RpcClient:
         track = data.pop("track", None)
 
         info = data.pop("info", None)
+
+        payload.update(data)
 
         if info and track:
 
@@ -252,11 +258,7 @@ class RpcClient:
             if buttons:
                 payload["buttons"] = buttons
 
-            self.users_rpc[user_id][bot_id].update_activity(payload)
-
-        else:
-            self.users_rpc[user_id][bot_id].clear()
-            return
+        self.users_rpc[user_id][bot_id].update_activity(payload)
 
 
     def get_lang(self, key: str) -> str:
@@ -278,6 +280,8 @@ class RpcClient:
             try:
                 async with websockets.connect(uri) as ws:
 
+                    print(f"Websocket conectado: {uri}")
+
                     for i in user_clients:
                         await ws.send(json.dumps({"user_id": i}))
 
@@ -295,7 +299,7 @@ class RpcClient:
 
                         op = data.pop("op")
                         public = data.pop("public", True)
-                        bot_id = data.get("bot_id")
+                        bot_id = data.pop("bot_id", None)
                         user = user_clients[user_id]["user"]
 
                         print(f"op: {op} | {user} [{user_id}] | bot: {bot_id}")
@@ -341,6 +345,7 @@ class RpcClient:
                                                                    self.get_lang("listeners") + f': {m}'
                                 except KeyError:
                                     pass
+
                                 self.update(user_id, bot_id, data)
 
                             case "close":
@@ -350,15 +355,16 @@ class RpcClient:
                                 print(f"unknow op: {msg.data}")
 
 
-            except (websockets.ConnectionClosedError, ConnectionRefusedError, ConnectionResetError, OSError):
-                print(f"Conexão perdida com o servidor: {uri} | Reconectando em 60seg.")
+            except (websockets.ConnectionClosedError, ConnectionResetError) as e:
+                print(f"Conexão perdida com o servidor: {uri} | Reconectando em 60seg. {repr(e)}")
                 await asyncio.sleep(60)
+            except ConnectionRefusedError:
+                await asyncio.sleep(500)
             except Exception as e:
-                traceback.print_exc()
                 print(f"Erro na conexão: {uri} | {repr(e)}")
                 await asyncio.sleep(60)
 
     async def handler(self):
         await asyncio.wait([asyncio.create_task(self.handle_socket(uri)) for uri in config["urls"]])
 
-asyncio.get_event_loop().run_until_complete(RpcClient().handler())
+asyncio.run(RpcClient().handler())
