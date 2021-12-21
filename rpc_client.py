@@ -70,6 +70,7 @@ for i in range(10):
     try:
         rpc = MyDiscordIPC(dummy_app, pipe=i)
         rpc.connect()
+        time.sleep(0.5)
         rpc.disconnect()
     except:
         continue
@@ -79,6 +80,12 @@ for i in range(10):
     user_clients[int(user_id)] = {"pipe": i, "user": user}
     rpc.user = user
     print(f"RPC conectado: {user} [{user_id}] pipe: {i}")
+
+
+if not user_clients:
+    print("Não foi detectado nenhuma instância do discord em execução.")
+    time.sleep(10)
+    raise Exception
 
 
 class RpcClient:
@@ -273,9 +280,22 @@ class RpcClient:
         return txt
 
 
+    async def clear_users_presences(self, users: set, bots: set):
+
+        for bot_id in bots:
+            for user_id in users:
+                try:
+                    self.users_rpc[user_id][bot_id].clear()
+                except:
+                    continue
+
+
     async def handle_socket(self, uri):
 
         while True:
+
+            bots = set()
+            users = set()
 
             try:
                 async with websockets.connect(uri) as ws:
@@ -301,6 +321,9 @@ class RpcClient:
                         public = data.pop("public", True)
                         bot_id = data.pop("bot_id", None)
                         user = user_clients[user_id]["user"]
+
+                        users.add(user_id)
+                        bots.add(bot_id)
 
                         print(f"op: {op} | {user} [{user_id}] | bot: {bot_id}")
 
@@ -349,6 +372,12 @@ class RpcClient:
                                 self.update(user_id, bot_id, data)
 
                             case "close":
+
+                                try:
+                                    users.remove(user_id)
+                                except:
+                                    pass
+
                                 self.update(user_id, bot_id, {})
 
                             case _:
@@ -357,11 +386,13 @@ class RpcClient:
 
             except (websockets.ConnectionClosedError, ConnectionResetError) as e:
                 print(f"Conexão perdida com o servidor: {uri} | Reconectando em 60seg. {repr(e)}")
+                await self.clear_users_presences(users, bots)
                 await asyncio.sleep(60)
             except ConnectionRefusedError:
                 await asyncio.sleep(500)
             except Exception as e:
                 print(f"Erro na conexão: {uri} | {repr(e)}")
+                await self.clear_users_presences(users, bots)
                 await asyncio.sleep(60)
 
     async def handler(self):
