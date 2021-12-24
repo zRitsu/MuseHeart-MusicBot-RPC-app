@@ -1,6 +1,7 @@
 import asyncio
 import json
 import datetime
+import pprint
 import time
 import traceback
 import os
@@ -135,7 +136,7 @@ class RpcClient:
 
         payload = {
             "assets": {
-                "large_image": "app"
+                "large_image": data.pop("thumb", "app")
             },
             "timestamps": {}
         }
@@ -339,10 +340,9 @@ class RpcClient:
 
                                 data = {
                                     "assets": {
-                                        "large_image": "app"
+                                        "large_image": data.pop("thumb", "app")
                                     },
                                     "details": text_idle[0],
-
                                 }
 
                                 if len(text_idle) > 1:
