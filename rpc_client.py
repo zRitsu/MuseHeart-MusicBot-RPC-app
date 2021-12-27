@@ -150,10 +150,8 @@ class RpcClient:
 
         if info and track:
 
-            m = info["members"]
-
             payload['assets']['large_text'] = self.get_lang("server") + f': {info["guild"]["name"]} | ' + self.get_lang(
-                "channel") + f': #{info["channel"]["name"]} | ' + self.get_lang("listeners") + f': {m}'
+                "channel") + f': #{info["channel"]["name"]} | ' + self.get_lang("listeners") + f': {info["mmembers"]}'
             payload['details'] = track["title"]
 
             if track["stream"]:
@@ -359,17 +357,6 @@ class RpcClient:
                                         }
                                     ]
 
-                                try:
-                                    m = data["info"]["members"]
-
-                                    data['assets']['large_text'] = self.get_lang(
-                                        "server") + f': {data["info"]["guild"]["name"]} | ' + \
-                                                                   self.get_lang(
-                                                                       "channel") + f': #{data["info"]["channel"]["name"]} | ' + \
-                                                                   self.get_lang("listeners") + f': {m}'
-                                except KeyError:
-                                    pass
-
                                 self.update(user_id, bot_id, data)
 
                             case "close":
@@ -392,6 +379,7 @@ class RpcClient:
             except ConnectionRefusedError:
                 await asyncio.sleep(500)
             except Exception as e:
+                traceback.print_exc()
                 print(f"Erro na conexão: {uri} | {repr(e)}")
                 await self.clear_users_presences(users, bots)
                 await asyncio.sleep(60)
