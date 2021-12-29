@@ -136,7 +136,7 @@ class RpcClient:
 
         payload = {
             "assets": {
-                "large_image": data.pop("thumb", "app"),
+                "large_image": data.pop("thumb", config["assets"]["app"]),
                 "small_image": "https://cdn.discordapp.com/attachments/480195401543188483/733507238290915388/cd.gif"
             },
             "timestamps": {}
@@ -155,7 +155,7 @@ class RpcClient:
             payload['details'] = track["title"]
 
             if track["stream"]:
-                payload['assets']['small_image'] = "stream"
+                payload['assets']['small_image'] = config["assets"]["stream"]
                 payload['assets']['small_text'] = self.get_lang("stream")
 
             if not track["paused"]:
@@ -180,7 +180,7 @@ class RpcClient:
                         else:
                             repeat_string = self.get_lang("loop_text")
 
-                        payload['assets']['small_image'] = "loop"
+                        payload['assets']['small_image'] = config["assets"]["loop"]
                         payload['assets']['small_text'] = repeat_string
 
                     else:
@@ -188,18 +188,18 @@ class RpcClient:
                         source_ico = get_thumb(track.get("url"))
 
                         if source_ico:
-                            payload['assets']['small_image'] = source_ico[0]
+                            payload['assets']['small_image'] = config["assets"][source_ico[0]]
                             payload['assets']['small_text'] = source_ico[1]
 
                 else:
                     payload['timestamps']['start'] = time.time()
 
-                    payload['assets']['small_image'] = "stream"
+                    payload['assets']['small_image'] = config["assets"]["stream"]
                     payload['assets']['small_text'] = "Stream"
 
             else:
 
-                payload['assets']['small_image'] = "pause"
+                payload['assets']['small_image'] = config["assets"]["pause"]
                 payload['assets']['small_text'] = self.get_lang("paused")
 
             state = ""
