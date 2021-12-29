@@ -227,7 +227,7 @@ class RpcClient:
                         pl_url = "https://www.youtube.com/playlist?list=" + \
                                  (pl_url.split('?list=' if '?list=' in pl_url else '&list='))[1]
 
-                    if (pl_size := len(pl_name)) > 21:
+                    if (pl_size := len(pl_name)) > 22:
                         state += f' | {self.get_lang("playlist")}: {pl_name}'
                         buttons.append({"label": self.get_lang("view_playlist"), "url": pl_url.replace("www.", "")})
 
@@ -246,7 +246,7 @@ class RpcClient:
 
                 elif ab_url:
 
-                    if (ab_size := len(ab_name)) > 21:
+                    if (ab_size := len(ab_name)) > 22:
                         state += f' | {self.get_lang("album")}: {ab_name}'
                         buttons.append({"label": self.get_lang("view_album"), "url": ab_url.replace("www.", "")})
 
