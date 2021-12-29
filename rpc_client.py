@@ -151,7 +151,7 @@ class RpcClient:
         if info and track:
 
             payload['assets']['large_text'] = self.get_lang("server") + f': {info["guild"]["name"]} | ' + self.get_lang(
-                "channel") + f': #{info["channel"]["name"]} | ' + self.get_lang("listeners") + f': {info["mmembers"]}'
+                "channel") + f': #{info["channel"]["name"]} | ' + self.get_lang("listeners") + f': {info["members"]}'
             payload['details'] = track["title"]
 
             if track["stream"]:
