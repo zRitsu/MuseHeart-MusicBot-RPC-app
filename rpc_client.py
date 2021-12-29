@@ -385,6 +385,6 @@ class RpcClient:
                 await asyncio.sleep(60)
 
     async def handler(self):
-        await asyncio.wait([asyncio.create_task(self.handle_socket(uri)) for uri in config["urls"]])
+        await asyncio.wait([asyncio.create_task(self.handle_socket(uri)) for uri in list(set(config["urls"]))])
 
 asyncio.run(RpcClient().handler())
