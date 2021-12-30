@@ -4,6 +4,7 @@
   "listeners": "Ouvinte(s)",
   "stream": "Ao vivo",
   "loop_text": "Repetição ativada",
+  "loop_queue": "Repetição da fila: ativada",
   "loop_remaining": "Repetições restantes",
   "paused": "Em pausa",
   "listen": "Ouvir esta música",

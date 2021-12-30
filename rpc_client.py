@@ -136,7 +136,7 @@ class RpcClient:
 
         payload = {
             "assets": {
-                "large_image": data.pop("thumb", config["assets"]["app"]),
+                "large_image": data.pop("thumb", config["assets"]["app"]).replace("mqdefault", "default"),
                 "small_image": "https://cdn.discordapp.com/attachments/480195401543188483/733507238290915388/cd.gif"
             },
             "timestamps": {}
@@ -169,19 +169,26 @@ class RpcClient:
                     payload['timestamps']['end'] = int(endtime.timestamp())
                     payload['timestamps']['start'] = int(startTime.timestamp())
 
-                    repeat = track.get('loop')
+                    player_loop = track.get('loop')
 
-                    if repeat:
+                    if player_loop:
 
-                        if isinstance(repeat, list):
-                            repeat_string = f"{self.get_lang('loop_text')}: {repeat[0]}/{repeat[1]}."
-                        elif isinstance(repeat, int):
-                            repeat_string = f"{self.get_lang('loop_remaining')}: {repeat}"
+                        if player_loop == "queue":
+                            loop_text = self.get_lang('loop_queue')
+                            payload['assets']['small_image'] = config["assets"]["loop_queue"]
+
                         else:
-                            repeat_string = self.get_lang("loop_text")
 
-                        payload['assets']['small_image'] = config["assets"]["loop"]
-                        payload['assets']['small_text'] = repeat_string
+                            if isinstance(player_loop, list):
+                                loop_text = f"{self.get_lang('loop_text')}: {player_loop[0]}/{player_loop[1]}."
+                            elif isinstance(player_loop, int):
+                                loop_text = f"{self.get_lang('loop_remaining')}: {player_loop}"
+                            else:
+                                loop_text = self.get_lang("loop_text")
+
+                            payload['assets']['small_image'] = config["assets"]["loop"]
+
+                        payload['assets']['small_text'] = loop_text
 
                     else:
 
@@ -227,7 +234,7 @@ class RpcClient:
                         pl_url = "https://www.youtube.com/playlist?list=" + \
                                  (pl_url.split('?list=' if '?list=' in pl_url else '&list='))[1]
 
-                    if (pl_size := len(pl_name)) > 22:
+                    if (pl_size := len(pl_name)) > 25:
                         state += f' | {self.get_lang("playlist")}: {pl_name}'
                         buttons.append({"label": self.get_lang("view_playlist"), "url": pl_url.replace("www.", "")})
 
@@ -291,6 +298,8 @@ class RpcClient:
 
 
     async def handle_socket(self, uri):
+
+        backoff = 7
 
         while True:
 
@@ -373,9 +382,10 @@ class RpcClient:
 
 
             except (websockets.ConnectionClosedError, ConnectionResetError) as e:
-                print(f"Conexão perdida com o servidor: {uri} | Reconectando em 60seg. {repr(e)}")
+                print(f"Conexão perdida com o servidor: {uri} | Reconectando em {backoff} seg. {repr(e)}")
                 await self.clear_users_presences(users, bots)
-                await asyncio.sleep(60)
+                await asyncio.sleep(backoff)
+                backoff *= 1.3
             except ConnectionRefusedError:
                 await asyncio.sleep(500)
             except Exception as e:
