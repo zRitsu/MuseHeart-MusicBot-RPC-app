@@ -13,6 +13,28 @@ class MyDiscordIPC(DiscordIPC):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.user = ""
+        self.next = None
+        self.updating = False
+
+    async def update_loop(self, data):
+
+        if self.updating:
+            self.next = data
+            return
+
+        self.next = None
+
+        self.update_activity(data)
+
+        self.updating = True
+
+        await asyncio.sleep(15)
+
+        self.updating = False
+
+        if self.next:
+            await self.update_loop(self.next)
+
 
 
 with open("config.json") as f:
@@ -126,7 +148,7 @@ class RpcClient:
             except FileNotFoundError:
                 return
 
-    def update(self, user_id: int, bot_id: int, data: dict):
+    async def update(self, user_id: int, bot_id: int, data: dict):
 
         self.check_presence(user_id, bot_id)
 
@@ -272,7 +294,7 @@ class RpcClient:
             if buttons:
                 payload["buttons"] = buttons
 
-        self.users_rpc[user_id][bot_id].update_activity(payload)
+        await self.users_rpc[user_id][bot_id].update_loop(payload)
 
 
     def get_lang(self, key: str) -> str:
@@ -340,7 +362,7 @@ class RpcClient:
 
                             case "update":
 
-                                self.update(user_id, bot_id, data)
+                                await self.update(user_id, bot_id, data)
 
                             case "idle":
 
@@ -366,7 +388,7 @@ class RpcClient:
                                         }
                                     ]
 
-                                self.update(user_id, bot_id, data)
+                                await self.update(user_id, bot_id, data)
 
                             case "close":
 
@@ -375,7 +397,7 @@ class RpcClient:
                                 except:
                                     pass
 
-                                self.update(user_id, bot_id, {})
+                                await self.update(user_id, bot_id, {})
 
                             case _:
                                 print(f"unknow op: {msg.data}")
