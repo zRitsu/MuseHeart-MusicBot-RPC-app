@@ -16,25 +16,6 @@ class MyDiscordIPC(DiscordIPC):
         self.next = None
         self.updating = False
 
-    async def update_loop(self, data):
-
-        if self.updating:
-            self.next = data
-            return
-
-        self.next = None
-
-        self.update_activity(data)
-
-        self.updating = True
-
-        #await asyncio.sleep(15)
-
-        self.updating = False
-
-        if self.next:
-            await self.update_loop(self.next)
-
 
 
 with open("config.json") as f:
@@ -300,7 +281,7 @@ class RpcClient:
             if buttons:
                 payload["buttons"] = buttons
 
-        await self.users_rpc[user_id][bot_id].update_loop(payload)
+        await self.users_rpc[user_id][bot_id].update_activity(payload)
 
 
     def get_lang(self, key: str) -> str:
