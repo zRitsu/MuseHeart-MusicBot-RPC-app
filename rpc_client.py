@@ -95,6 +95,8 @@ for i in range(10):
         rpc.connect()
         time.sleep(0.5)
         rpc.disconnect()
+        if not config.get("load_all_instances", True):
+            break
     except:
         continue
 

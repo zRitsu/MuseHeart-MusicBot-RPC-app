@@ -3,6 +3,7 @@
   "urls": [
     "ws://url:porta/ws"
   ],
+  "load_all_instances": true,
   "assets": {
     "app": "https://cdn.discordapp.com/emojis/912965656624889916.gif",
     "loop":"https://cdn.discordapp.com/attachments/554468640942981147/925586275950534686/loop.gif",
