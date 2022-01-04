@@ -281,7 +281,7 @@ class RpcClient:
             if buttons:
                 payload["buttons"] = buttons
 
-        await self.users_rpc[user_id][bot_id].update_activity(payload)
+        self.users_rpc[user_id][bot_id].update_activity(payload)
 
 
     def get_lang(self, key: str) -> str:
