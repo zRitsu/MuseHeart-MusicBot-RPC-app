@@ -143,7 +143,7 @@ class RpcClient:
 
         payload = {
             "assets": {
-                "large_image": data.pop("thumb", config["assets"]["app"]),
+                "large_image": data.pop("thumb", config["assets"]["app"]).replace("mqdefault", "default"),
                 "small_image": "https://cdn.discordapp.com/attachments/480195401543188483/733507238290915388/cd.gif"
             },
             "timestamps": {}
