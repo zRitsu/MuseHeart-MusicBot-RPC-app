@@ -220,37 +220,35 @@ class RpcClient:
 
             buttons = []
 
-            #if track:
-
             if url := track.get("url"):
                 buttons.append({"label": self.get_lang("listen"), "url": url.replace("www.", "")})
 
             state += f'{self.get_lang("author")}: {track["author"]}'
 
-            pl_url = track.get("playlist_url")
+            playlist_url = track.get("playlist_url")
             playlist_name = track.get("playlist_name")
-            ab_url = track.get("album_url")
+            album_url = track.get("album_url")
             album_name = track.get("album_name")
 
-            if not pl_url:
-                pl_url = "https://cdn.discordapp.com/attachments/480195401543188483/802406033493852201/unknown.png"
+            if not playlist_url:
+                playlist_url = "https://cdn.discordapp.com/attachments/480195401543188483/802406033493852201/unknown.png"
 
-            if playlist_name and pl_url:
+            if playlist_name and playlist_url:
 
-                if 'youtube.com' in pl_url:
-                    pl_url = "https://www.youtube.com/playlist?list=" + \
-                             (pl_url.split('?list=' if '?list=' in pl_url else '&list='))[1]
+                if 'youtube.com' in playlist_url:
+                    playlist_url = "https://www.youtube.com/playlist?list=" + \
+                             (playlist_url.split('?list=' if '?list=' in playlist_url else '&list='))[1]
 
                 if (playlist_size := len(playlist_name)) > 25:
                     state += f' | {self.get_lang("playlist")}: {playlist_name}'
-                    buttons.append({"label": self.get_lang("view_playlist"), "url": pl_url.replace("www.", "")})
+                    buttons.append({"label": self.get_lang("view_playlist"), "url": playlist_url.replace("www.", "")})
 
                 else:
 
                     if playlist_size < 15:
                         playlist_name = f"Playlist: {playlist_name}"
 
-                    buttons.append({"label": playlist_name, "url": pl_url.replace("www.", "")})
+                    buttons.append({"label": playlist_name, "url": playlist_url.replace("www.", "")})
 
             elif state and playlist_name:
                 state += f' | {playlist_name}'
@@ -258,18 +256,18 @@ class RpcClient:
             elif playlist_name:
                 state += f'{self.get_lang("playlist")}: {playlist_name}'
 
-            elif ab_url:
+            elif album_url:
 
                 if (album_size := len(album_name)) > 22:
                     state += f' | {self.get_lang("album")}: {album_name}'
-                    buttons.append({"label": self.get_lang("view_album"), "url": ab_url.replace("www.", "")})
+                    buttons.append({"label": self.get_lang("view_album"), "url": album_url.replace("www.", "")})
 
                 else:
 
                     if album_size < 17:
                         album_name = f"{self.get_lang('album')}: {album_name}"
 
-                    buttons.append({"label": album_name, "url": ab_url})
+                    buttons.append({"label": album_name, "url": album_url})
 
             if not state:
                 state = "   "
