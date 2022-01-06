@@ -348,7 +348,8 @@ class RpcClient:
                             users_ws = [u for u in users_ws if u in user_clients]
 
                         try:
-                            data["info"]["members"] = len(users_ws)
+                            if not data["info"].get("members"):
+                                data["info"]["members"] = len(users_ws)
                         except KeyError:
                             pass
 
