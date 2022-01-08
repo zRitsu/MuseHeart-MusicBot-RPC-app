@@ -8,6 +8,7 @@ import os
 import websockets
 from discoIPC.ipc import DiscordIPC
 
+
 class MyDiscordIPC(DiscordIPC):
 
     def __init__(self, *args, **kwargs):
@@ -16,6 +17,32 @@ class MyDiscordIPC(DiscordIPC):
         self.next = None
         self.updating = False
 
+
+    def _send(self, opcode, payload):
+
+        encoded_payload = self._encode(opcode, payload)
+
+        try:
+            if self.platform == 'windows':
+                self.socket.write(encoded_payload)
+                try:
+                    self.socket.flush()
+                except OSError:
+                    raise IPCError(f'Não foi possivel enviar dados ao discord via IPC.', client=self)
+            else:
+                self.socket.send(encoded_payload)
+        except Exception as e:
+            raise IPCError(f'Não foi possivel enviar dados ao discord via IPC | Erro: {repr(e)}.', client=self)
+
+
+class IPCError(Exception):
+
+    def __init__(self, error, client: MyDiscordIPC):
+        self.error = error
+        self.client = client
+
+    def __repr__(self):
+        return self.error
 
 
 with open("config.json") as f:
@@ -43,6 +70,7 @@ replaces = [
 langs = {}
 
 def get_thumb(url):
+
     if "youtube.com" in url:
         return ["yt", "Youtube"]
     if "spotify.com" in url:
@@ -138,13 +166,16 @@ class RpcClient:
         self.check_presence(user_id, bot_id)
 
         if not data:
-            self.users_rpc[user_id][bot_id].clear()
+            try:
+                self.users_rpc[user_id][bot_id].clear()
+            except:
+                pass
             return
 
         payload = {
             "assets": {
                 "large_image": data.pop("thumb", config["assets"]["app"]).replace("mqdefault", "default"),
-                "small_image": "https://cdn.discordapp.com/attachments/480195401543188483/733507238290915388/cd.gif"
+                "small_image": "https://i.ibb.co/qD5gvKR/cd.gif"
             },
             "timestamps": {}
         }
@@ -279,7 +310,32 @@ class RpcClient:
             if buttons:
                 payload["buttons"] = buttons
 
-        self.users_rpc[user_id][bot_id].update_activity(payload)
+        try:
+
+            self.users_rpc[user_id][bot_id].update_activity(payload)
+
+        except IPCError:
+
+            used_pipes = [i["pipe"] for u, i in user_clients.items() if u != user_id]
+
+            for i in range(12):
+
+                if i in used_pipes:
+                    continue
+
+                try:
+                    rpc = self.get_bot_rpc(bot_id, i)
+                    rpc.connect()
+                    self.users_rpc[user_id][bot_id] = rpc
+                    user_clients[user_id]["pipe"] = i
+                    print(f"RPC reconectado ao discord: {user_clients[user_id]['user']} | pipe: {i}")
+                    await self.update(user_id, bot_id, data)
+                    return
+                except:
+                    continue
+
+            del self.users_rpc[user_id]
+            del user_clients[user_id]
 
 
     def get_lang(self, key: str) -> str:
