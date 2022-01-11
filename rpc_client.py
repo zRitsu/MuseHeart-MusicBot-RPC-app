@@ -17,7 +17,6 @@ class MyDiscordIPC(DiscordIPC):
         self.next = None
         self.updating = False
 
-
     def _send(self, opcode, payload):
 
         encoded_payload = self._encode(opcode, payload)
@@ -69,8 +68,8 @@ replaces = [
 
 langs = {}
 
-def get_thumb(url):
 
+def get_thumb(url):
     if "youtube.com" in url:
         return ["yt", "Youtube"]
     if "spotify.com" in url:
@@ -96,7 +95,6 @@ for f in os.listdir("./langs"):
     with open(f"./langs/{f}", encoding="utf-8") as file:
         langs[f[:-5]] = json.load(file)
 
-
 for i in range(10):
 
     try:
@@ -114,7 +112,6 @@ for i in range(10):
     user_clients[int(user_id_)] = {"pipe": i, "user": user}
     rpc.user = user
     print(f"RPC conectado: {user} [{user_id_}] pipe: {i}")
-
 
 if not user_clients:
     print("Não foi detectado nenhuma instância do discord em execução.")
@@ -268,7 +265,7 @@ class RpcClient:
 
                 if 'youtube.com' in playlist_url:
                     playlist_url = "https://www.youtube.com/playlist?list=" + \
-                             (playlist_url.split('?list=' if '?list=' in playlist_url else '&list='))[1]
+                                   (playlist_url.split('?list=' if '?list=' in playlist_url else '&list='))[1]
 
                 if (playlist_size := len(playlist_name)) > 25:
                     state += f' | {self.get_lang("playlist")}: {playlist_name}'
@@ -337,7 +334,6 @@ class RpcClient:
             del self.users_rpc[user_id]
             del user_clients[user_id]
 
-
     def get_lang(self, key: str) -> str:
 
         try:
@@ -349,7 +345,6 @@ class RpcClient:
             txt = langs["en-us"].get(key)
         return txt
 
-
     async def clear_users_presences(self, users: set, bots: set):
 
         for bot_id in bots:
@@ -358,7 +353,6 @@ class RpcClient:
                     self.users_rpc[user_id][bot_id].clear()
                 except:
                     continue
-
 
     async def handle_socket(self, uri):
 
@@ -420,49 +414,47 @@ class RpcClient:
 
                             print(f"op: {op} | {user} [{u_id}] | bot: {bot_id}")
 
-                            match op:
+                            if op == "update":
 
-                                case "update":
+                                await self.update(u_id, bot_id, data)
 
-                                    await self.update(u_id, bot_id, data)
+                            elif op == "idle":
 
-                                case "idle":
+                                text_idle = self.get_lang("idle")
 
-                                    text_idle = self.get_lang("idle")
+                                data = {
+                                    "assets": {
+                                        "large_image": data.pop("thumb", config["assets"]["app"])
+                                    },
+                                    "details": text_idle[0],
+                                }
 
-                                    data = {
-                                        "assets": {
-                                            "large_image": data.pop("thumb", config["assets"]["app"])
-                                        },
-                                        "details": text_idle[0],
-                                    }
+                                if len(text_idle) > 1:
+                                    data['state'] = text_idle[1]
 
-                                    if len(text_idle) > 1:
-                                        data['state'] = text_idle[1]
+                                if public:
+                                    invite = f"https://discord.com/api/oauth2/authorize?client_id={bot_id}&permissions=8&scope=bot%20applications.commands"
 
-                                    if public:
-                                        invite = f"https://discord.com/api/oauth2/authorize?client_id={bot_id}&permissions=8&scope=bot%20applications.commands"
+                                    data["buttons"] = [
+                                        {
+                                            "label": self.get_lang("invite"),
+                                            "url": invite
+                                        }
+                                    ]
 
-                                        data["buttons"] = [
-                                            {
-                                                "label": self.get_lang("invite"),
-                                                "url": invite
-                                            }
-                                        ]
+                                await self.update(u_id, bot_id, data)
 
-                                    await self.update(u_id, bot_id, data)
+                            elif op == "close":
 
-                                case "close":
+                                try:
+                                    users.remove(u_id)
+                                except Exception:
+                                    pass
 
-                                    try:
-                                        users.remove(u_id)
-                                    except:
-                                        pass
+                                await self.update(u_id, bot_id, {})
 
-                                    await self.update(u_id, bot_id, {})
-
-                                case _:
-                                    print(f"unknow op: {msg.data}")
+                            else:
+                                print(f"unknow op: {msg.data}")
 
 
             except (websockets.ConnectionClosedError, ConnectionResetError, websockets.InvalidStatusCode) as e:
@@ -480,5 +472,6 @@ class RpcClient:
 
     async def handler(self):
         await asyncio.wait([asyncio.create_task(self.handle_socket(uri)) for uri in list(set(config["urls"]))])
+
 
 asyncio.run(RpcClient().handler())
