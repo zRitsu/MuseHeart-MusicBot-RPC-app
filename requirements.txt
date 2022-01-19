@@ -1,2 +1,4 @@
 websockets
 git+https://github.com/zRitsu/discoIPC.git
+PySimpleGUI
+psgtray

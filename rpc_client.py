@@ -1,12 +1,14 @@
 import asyncio
 import json
 import datetime
+import os
 import pprint
 import time
 import traceback
-import os
+from main_window import RPCGui
 import websockets
 from discoIPC.ipc import DiscordIPC
+from config_loader import read_config
 
 
 class MyDiscordIPC(DiscordIPC):
@@ -16,6 +18,7 @@ class MyDiscordIPC(DiscordIPC):
         self.user = ""
         self.next = None
         self.updating = False
+        self.last_data = {}
 
     def _send(self, opcode, payload):
 
@@ -33,6 +36,19 @@ class MyDiscordIPC(DiscordIPC):
         except Exception as e:
             raise IPCError(f'Não foi possivel enviar dados ao discord via IPC | Erro: {repr(e)}.', client=self)
 
+    def update_activity(self, activity=None):
+
+        if activity:
+            self.last_data = activity
+        else:
+            self.activity.clear()
+
+        try:
+            super().update_activity(activity=activity)
+        except Exception as e:
+            self.last_data.clear()
+            raise e
+
 
 class IPCError(Exception):
 
@@ -42,10 +58,6 @@ class IPCError(Exception):
 
     def __repr__(self):
         return self.error
-
-
-with open("config.json") as f:
-    config = json.load(f)
 
 user_clients = {}
 
@@ -66,8 +78,6 @@ replaces = [
     ("`", "'")
 ]
 
-langs = {}
-
 
 def get_thumb(url):
     if "youtube.com" in url:
@@ -87,47 +97,77 @@ def fix_characters(text: str, limit=30):
     return text
 
 
-for f in os.listdir("./langs"):
-
-    if not f.endswith(".json"):
-        continue
-
-    with open(f"./langs/{f}", encoding="utf-8") as file:
-        langs[f[:-5]] = json.load(file)
-
-for i in range(10):
-
-    try:
-        rpc = MyDiscordIPC(dummy_app, pipe=i)
-        rpc.connect()
-        time.sleep(0.5)
-        rpc.disconnect()
-        if not config.get("load_all_instances", True):
-            break
-    except:
-        continue
-
-    user_id_ = rpc.data['data']['user']['id']
-    user = f"{rpc.data['data']['user']['username']}#{rpc.data['data']['user']['discriminator']}"
-    user_clients[int(user_id_)] = {"pipe": i, "user": user}
-    rpc.user = user
-    print(f"RPC conectado: {user} [{user_id_}] pipe: {i}")
-
-if not user_clients:
-    print("Não foi detectado nenhuma instância do discord em execução.")
-    time.sleep(10)
-    raise Exception
-
-
 class RpcClient:
 
     def __init__(self):
+        self.last_data = {}
+        self.tasks = []
+        self.main_task = None
+        self.loop = asyncio.get_event_loop()
+        self.config = read_config()
+        self.langs = {}
 
-        self.lang = config["language"]
+        for f in os.listdir("./langs"):
+            if not f.endswith(".json"):
+                continue
+
+            self.langs.update({f[:-5]: self.load_json(f"./langs/{f}")})
 
         self.users_rpc = {
             # user -> {bot: presence}
         }
+
+        self.gui = RPCGui(self)
+
+
+    def load_json(self, json_file: str):
+
+
+        with open(json_file, encoding="utf-8") as f:
+            return json.load(f)
+
+
+    def save_json(self, json_file: str, data: dict):
+
+        with open(json_file, "w") as f:
+            f.write(json.dumps(data, indent=4))
+
+
+    def get_app_instances(self):
+
+        for i in range(10):
+
+            try:
+                rpc = MyDiscordIPC(dummy_app, pipe=i)
+                rpc.connect()
+                time.sleep(0.5)
+                rpc.disconnect()
+                if not self.config.get("load_all_instances", True):
+                    break
+            except:
+                continue
+
+            user_id_ = rpc.data['data']['user']['id']
+            user = f"{rpc.data['data']['user']['username']}#{rpc.data['data']['user']['discriminator']}"
+            user_clients[int(user_id_)] = {"pipe": i, "user": user}
+            rpc.user = user
+            self.gui.update_log(f"RPC conectado: {user} [{user_id_}] pipe: {i}")
+
+        if not user_clients:
+            raise Exception("Não foi detectado nenhuma instância do discord em execução.")
+
+    def close_app_instances(self):
+
+        for u_id, u_data in self.users_rpc.items():
+            for b_id, rpc in u_data.items():
+                try:
+                    rpc.disconnect()
+                except:
+                    traceback.print_exc()
+
+        self.users_rpc.clear()
+        user_clients.clear()
+
 
     def get_bot_rpc(self, bot_id: int, pipe: int) -> MyDiscordIPC:
 
@@ -156,7 +196,15 @@ class RpcClient:
             except FileNotFoundError:
                 return
 
-    async def update(self, user_id: int, bot_id: int, data: dict):
+    def exit(self):
+        for t in self.tasks:
+            t.cancel()
+        try:
+            self.loop.call_soon_threadsafe(self.loop.stop)
+        except:
+            pass
+
+    def update(self, user_id: int, bot_id: int, data: dict, refresh_timestamp=True):
 
         data = dict(data)
 
@@ -169,9 +217,11 @@ class RpcClient:
                 pass
             return
 
+        thumb = data.pop("thumb", self.config["assets"]["app"]).replace("mqdefault", "default")
+
         payload = {
             "assets": {
-                "large_image": data.pop("thumb", config["assets"]["app"]).replace("mqdefault", "default"),
+                "large_image": self.config["assets"]["app"] if not self.config["show_thumbnail"] else thumb,
                 "small_image": "https://i.ibb.co/qD5gvKR/cd.gif"
             },
             "timestamps": {}
@@ -185,12 +235,13 @@ class RpcClient:
 
         if info and track:
 
-            payload['assets']['large_text'] = self.get_lang("server") + f': {info["guild"]["name"]} | ' + self.get_lang(
+            if self.config["show_guild_details"]:
+                payload['assets']['large_text'] = self.get_lang("server") + f': {info["guild"]["name"]} | ' + self.get_lang(
                 "channel") + f': #{info["channel"]["name"]} | ' + self.get_lang("listeners") + f': {info["members"]}'
             payload['details'] = track["title"]
 
             if track["stream"]:
-                payload['assets']['small_image'] = config["assets"]["stream"]
+                payload['assets']['small_image'] = self.config["assets"]["stream"]
                 payload['assets']['small_text'] = self.get_lang("stream")
 
             if not track["paused"]:
@@ -201,8 +252,12 @@ class RpcClient:
                     endtime = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(
                         milliseconds=track["duration"] - track["position"]))
 
-                    payload['timestamps']['end'] = int(endtime.timestamp())
-                    payload['timestamps']['start'] = int(startTime.timestamp())
+                    if refresh_timestamp:
+                        payload['timestamps']['end'] = int(endtime.timestamp())
+                        payload['timestamps']['start'] = int(startTime.timestamp())
+                    else:
+                        payload['timestamps']['end'] = self.users_rpc[user_id][bot_id].last_data['timestamps']['end']
+                        payload['timestamps']['start'] = self.users_rpc[user_id][bot_id].last_data['timestamps']['start']
 
                     player_loop = track.get('loop')
 
@@ -210,7 +265,7 @@ class RpcClient:
 
                         if player_loop == "queue":
                             loop_text = self.get_lang('loop_queue')
-                            payload['assets']['small_image'] = config["assets"]["loop_queue"]
+                            payload['assets']['small_image'] = self.config["assets"]["loop_queue"]
 
                         else:
 
@@ -221,7 +276,7 @@ class RpcClient:
                             else:
                                 loop_text = self.get_lang("loop_text")
 
-                            payload['assets']['small_image'] = config["assets"]["loop"]
+                            payload['assets']['small_image'] = self.config["assets"]["loop"]
 
                         payload['assets']['small_text'] = loop_text
 
@@ -230,25 +285,27 @@ class RpcClient:
                         source_ico = get_thumb(track.get("url"))
 
                         if source_ico:
-                            payload['assets']['small_image'] = config["assets"][source_ico[0]]
+                            payload['assets']['small_image'] = self.config["assets"][source_ico[0]]
                             payload['assets']['small_text'] = source_ico[1]
 
                 else:
                     payload['timestamps']['start'] = time.time()
 
-                    payload['assets']['small_image'] = config["assets"]["stream"]
+                    payload['assets']['small_image'] = self.config["assets"]["stream"]
                     payload['assets']['small_text'] = "Stream"
 
             else:
 
-                payload['assets']['small_image'] = config["assets"]["pause"]
+                payload['assets']['small_image'] = self.config["assets"]["pause"]
                 payload['assets']['small_text'] = self.get_lang("paused")
 
             state = ""
 
             buttons = []
 
-            if url := track.get("url"):
+            if (url := track.get("url")) and self.config["show_listen_button"]:
+                if not self.config["playlist_refs"]:
+                    url = url.split("&list=")[0]
                 buttons.append({"label": self.get_lang("listen"), "url": url.replace("www.", "")})
 
             state += f'{self.get_lang("author")}: {track["author"]}'
@@ -258,33 +315,32 @@ class RpcClient:
             album_url = track.get("album_url")
             album_name = track.get("album_name")
 
-            if not playlist_url:
-                playlist_url = "https://cdn.discordapp.com/attachments/480195401543188483/802406033493852201/unknown.png"
+            if self.config["show_playlist_button"]:
 
-            if playlist_name and playlist_url:
+                if playlist_name and playlist_url:
 
-                if 'youtube.com' in playlist_url:
-                    playlist_url = "https://www.youtube.com/playlist?list=" + \
-                                   (playlist_url.split('?list=' if '?list=' in playlist_url else '&list='))[1]
+                    if 'youtube.com' in playlist_url:
+                        playlist_url = "https://www.youtube.com/playlist?list=" + \
+                                       (playlist_url.split('?list=' if '?list=' in playlist_url else '&list='))[1]
 
-                if (playlist_size := len(playlist_name)) > 25:
-                    state += f' | {self.get_lang("playlist")}: {playlist_name}'
-                    buttons.append({"label": self.get_lang("view_playlist"), "url": playlist_url.replace("www.", "")})
+                    if (playlist_size := len(playlist_name)) > 25:
+                        state += f' | {self.get_lang("playlist")}: {playlist_name}'
+                        buttons.append({"label": self.get_lang("view_playlist"), "url": playlist_url.replace("www.", "")})
 
-                else:
+                    else:
 
-                    if playlist_size < 15:
-                        playlist_name = f"Playlist: {playlist_name}"
+                        if playlist_size < 15:
+                            playlist_name = f"Playlist: {playlist_name}"
 
-                    buttons.append({"label": playlist_name, "url": playlist_url.replace("www.", "")})
+                        buttons.append({"label": playlist_name, "url": playlist_url.replace("www.", "")})
 
-            elif state and playlist_name:
-                state += f' | {playlist_name}'
+                elif state and playlist_name:
+                    state += f' | {playlist_name}'
 
-            elif playlist_name:
-                state += f'{self.get_lang("playlist")}: {playlist_name}'
+                elif playlist_name:
+                    state += f'{self.get_lang("playlist")}: {playlist_name}'
 
-            elif album_url:
+            if album_url:
 
                 if (album_size := len(album_name)) > 22:
                     state += f' | {self.get_lang("album")}: {album_name}'
@@ -302,7 +358,13 @@ class RpcClient:
 
             payload['state'] = state
 
-            payload["type"] = 3
+            #payload["type"] = 0
+
+            if self.config["show_guild_details"] and len(buttons) < 2:
+                try:
+                    buttons.append({"label": "Entrar no canal de voz", "url": info["guild"]["vc_url"]})
+                except KeyError:
+                    pass
 
             if buttons:
                 payload["buttons"] = buttons
@@ -325,8 +387,8 @@ class RpcClient:
                     rpc.connect()
                     self.users_rpc[user_id][bot_id] = rpc
                     user_clients[user_id]["pipe"] = i
-                    print(f"RPC reconectado ao discord: {user_clients[user_id]['user']} | pipe: {i}")
-                    await self.update(user_id, bot_id, data)
+                    self.gui.update_log(f"RPC reconectado ao discord: {user_clients[user_id]['user']} | pipe: {i}")
+                    self.update(user_id, bot_id, data)
                     return
                 except:
                     continue
@@ -334,15 +396,19 @@ class RpcClient:
             del self.users_rpc[user_id]
             del user_clients[user_id]
 
+        except Exception:
+            traceback.print_exc()
+            pprint.pprint(payload)
+
     def get_lang(self, key: str) -> str:
 
         try:
-            lang = langs[self.lang]
+            lang = self.langs[self.config["language"]]
             txt: str = lang.get(key)
             if not txt:
-                txt = langs["en-us"].get(key)
+                txt = self.langs["en-us"].get(key)
         except KeyError:
-            txt = langs["en-us"].get(key)
+            txt = self.langs["en-us"].get(key)
         return txt
 
     async def clear_users_presences(self, users: set, bots: set):
@@ -366,7 +432,7 @@ class RpcClient:
             try:
                 async with websockets.connect(uri) as ws:
 
-                    print(f"Websocket conectado: {uri}")
+                    self.gui.update_log(f"Websocket conectado: {uri}", tooltip=True)
 
                     for i in user_clients:
                         await ws.send(json.dumps({"op": "rpc_update", "user_id": i}))
@@ -412,37 +478,66 @@ class RpcClient:
                             except KeyError:
                                 continue
 
-                            print(f"op: {op} | {user} [{u_id}] | bot: {bot_id}")
+                            self.gui.update_log(f"op: {op} | {user} [{u_id}] | bot: {bot_id}")
+
+                            try:
+                                self.last_data[u_id][bot_id] = data
+                            except KeyError:
+                                self.last_data[u_id] = {bot_id: data}
 
                             if op == "update":
 
-                                await self.update(u_id, bot_id, data)
+                                self.update(u_id, bot_id, data)
 
                             elif op == "idle":
 
                                 text_idle = self.get_lang("idle")
 
-                                data = {
+                                try:
+                                    if self.config["guild_icon"]:
+                                        data["thumb"] = data["info"]["guild"]["icon"]
+                                except KeyError:
+                                    pass
+
+                                thumb = data.pop("thumb", self.config["assets"]["app"])
+
+                                if not self.config["guild_icon"]:
+                                    thumb = self.config["assets"]["app"]
+
+                                try:
+                                    guild_invite = data["info"]["guild"]["vc_url"]
+                                except KeyError:
+                                    guild_invite = None
+
+                                payload = {
                                     "assets": {
-                                        "large_image": data.pop("thumb", config["assets"]["app"])
+                                        "large_image": thumb
                                     },
                                     "details": text_idle[0],
                                 }
 
+                                if not self.config.get("privacy"):
+                                    payload["assets"]["large_text"] = self.get_lang("server") + f': {data["info"]["guild"]["name"]} | ' \
+                                                            + self.get_lang("channel") + f': #{data["info"]["channel"]["name"]} | '\
+                                                            + self.get_lang("listeners") + f': {data["info"]["members"]}'
+
                                 if len(text_idle) > 1:
-                                    data['state'] = text_idle[1]
+                                    payload['state'] = text_idle[1]
+
+                                buttons = []
 
                                 if public:
                                     invite = f"https://discord.com/api/oauth2/authorize?client_id={bot_id}&permissions=8&scope=bot%20applications.commands"
 
-                                    data["buttons"] = [
-                                        {
-                                            "label": self.get_lang("invite"),
-                                            "url": invite
-                                        }
-                                    ]
+                                    buttons.append({"label": self.get_lang("invite"), "url": invite})
 
-                                await self.update(u_id, bot_id, data)
+                                if not self.config.get("privacy") and guild_invite:
+                                    buttons.append({"label": "Entrar no canal de voz", "url": guild_invite})
+
+                                if buttons:
+                                    payload["buttons"] = buttons
+
+                                self.update(u_id, bot_id, payload)
 
                             elif op == "close":
 
@@ -451,14 +546,20 @@ class RpcClient:
                                 except Exception:
                                     pass
 
-                                await self.update(u_id, bot_id, {})
+                                try:
+                                    del self.last_data[u_id][bot_id]
+                                except:
+                                    pass
+
+                                self.update(u_id, bot_id, {})
 
                             else:
-                                print(f"unknow op: {msg.data}")
+                                self.gui.update_log(f"unknow op: {msg.data}", tooltip=True, log_type="warning")
 
 
             except (websockets.ConnectionClosedError, ConnectionResetError, websockets.InvalidStatusCode) as e:
-                print(f"Conexão perdida com o servidor: {uri} | Reconectando em {backoff} seg. {repr(e)}")
+                self.gui.update_log(f"Conexão perdida com o servidor: {uri} | Reconectando em {backoff} seg. {repr(e)}",
+                                    tooltip=True, log_type="warning")
                 await self.clear_users_presences(users, bots)
                 await asyncio.sleep(backoff)
                 backoff *= 1.3
@@ -466,12 +567,22 @@ class RpcClient:
                 await asyncio.sleep(500)
             except Exception as e:
                 traceback.print_exc()
-                print(f"Erro na conexão: {uri} | {repr(e)}")
+                self.gui.update_log(f"Erro na conexão: {uri} | {repr(e)}", tooltip=True, log_type="error")
                 await self.clear_users_presences(users, bots)
                 await asyncio.sleep(60)
 
+
     async def handler(self):
-        await asyncio.wait([asyncio.create_task(self.handle_socket(uri)) for uri in list(set(config["urls"]))])
+        self.tasks = [self.loop.create_task(self.handle_socket(uri)) for uri in list(set(self.config["urls"]))]
+        await asyncio.wait(self.tasks)
 
 
-asyncio.run(RpcClient().handler())
+    def start_ws(self):
+        try:
+            self.loop.run_until_complete(self.handler())
+        except RuntimeError:
+            pass
+
+
+if __name__ == "__main__":
+    RpcClient()
