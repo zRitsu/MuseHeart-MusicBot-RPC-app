@@ -552,7 +552,6 @@ class RpcClient:
                     await ws.send(json.dumps({"op": "rpc_update", "user_ids": list(user_clients)}))
 
                     async for msg in ws:
-
                         try:
                             data = json.loads(msg)
                         except Exception:
@@ -562,6 +561,9 @@ class RpcClient:
                         try:
                             if not data['op']:
                                 continue
+                            elif data['op'] == "close":
+                                await ws.close()
+                                return
                         except:
                             continue
 
@@ -603,15 +605,17 @@ class RpcClient:
 
             except (websockets.ConnectionClosedError, ConnectionResetError, websockets.InvalidStatusCode) as e:
 
-                self.gui.update_log(f"Conexão perdida com o servidor: {uri} | Reconectando em {backoff} seg. {repr(e)}",
-                                    tooltip=True, log_type="warning")
                 await self.clear_users_presences(uri)
 
                 try:
                     if e.code == 1005:
+                        self.gui.update_log(f"Conexão finalizada com o servidor: {uri}")
                         return
                 except AttributeError:
                     pass
+
+                self.gui.update_log(f"Conexão perdida com o servidor: {uri} | Reconectando em {backoff} seg. {repr(e)}",
+                                    tooltip=True, log_type="warning")
 
                 await asyncio.sleep(backoff*10)
                 backoff *= 1.3
