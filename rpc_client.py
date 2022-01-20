@@ -561,9 +561,6 @@ class RpcClient:
                         try:
                             if not data['op']:
                                 continue
-                            elif data['op'] == "close":
-                                await ws.close()
-                                return
                         except:
                             continue
 
