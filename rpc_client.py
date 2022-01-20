@@ -220,8 +220,6 @@ class RpcClient:
 
         data = dict(data)
 
-        public = data.pop("public", True)
-
         if data['op'] == "update":
 
             self.update(user_id, bot_id, data, refresh_timestamp=refresh_timestamp)
@@ -233,7 +231,7 @@ class RpcClient:
             except KeyError:
                 self.last_data[user_id] = {bot_id: dict(data)}
 
-            payload = self.get_idle_data(bot_id, data, public=public)
+            payload = self.get_idle_data(bot_id, data)
 
             self.update(user_id, bot_id, payload, refresh_timestamp=refresh_timestamp)
 
@@ -463,18 +461,18 @@ class RpcClient:
             self.gui.update_log("", exception=e)
             pprint.pprint(payload)
 
-    def get_idle_data(self, bot_id: int, data: dict, public=False):
+    def get_idle_data(self, bot_id: int, data: dict):
 
         data = dict(data)
 
         text_idle = self.get_lang("idle")
 
-        guild_invite = None
-        try:
-            if self.config["bot_invite"]:
-                guild_invite = data["info"]["guild"]["vc_url"]
-        except KeyError:
-            pass
+        vc_button = None
+        if self.config["show_guild_details"]:
+            try:
+                vc_button = data["info"]["guild"]["vc_url"]
+            except KeyError:
+                pass
 
         payload = {
             "thumb": data.pop("thumb", None),
@@ -492,13 +490,15 @@ class RpcClient:
 
         buttons = []
 
-        if public:
+        public = data.pop("public", True)
+
+        if public and self.config["bot_invite"]:
             invite = f"https://discord.com/api/oauth2/authorize?client_id={bot_id}&permissions=8&scope=bot%20applications.commands"
 
             buttons.append({"label": self.get_lang("invite"), "url": invite})
 
-        if self.config["show_guild_details"] and guild_invite:
-            buttons.append({"label": "Entrar no canal de voz.", "url": guild_invite})
+        if vc_button:
+            buttons.append({"label": "Entrar no canal de voz.", "url": vc_button})
 
         if buttons:
             payload["buttons"] = buttons
