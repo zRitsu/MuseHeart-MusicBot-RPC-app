@@ -1,9 +1,9 @@
 from __future__ import annotations
+
+import pprint
 import sys
 import time
 import traceback
-from threading import Thread
-
 from PySimpleGUI import PySimpleGUI as sg
 from psgtray import SystemTray
 from typing import TYPE_CHECKING
@@ -17,7 +17,6 @@ class RPCGui:
         self.appname = "Discord RPC (Music Bot)"
         self.client = client
         self.config = self.client.config
-        self.loop = None
         self.ready = False
 
         self.log = {
@@ -65,11 +64,10 @@ class RPCGui:
                     [sg.Checkbox('Exibir detalhes do canal onde o player está ativo (quantidade de membros, nome do '
                                  'servidor e canal, etc).', default=self.config["show_guild_details"],
                                  key='show_guild_details', enable_events=True)],
-                    [sg.Checkbox('Forçar o ícone do app asset (quando está em espera)',
-                                 default=self.config['force_large_app_asset'], key='force_large_app_asset',
-                                 enable_events=True)],
-                    [sg.Checkbox('Exibir icone do server ao invés do bot (quando está em espera).',
-                                 default=self.config['guild_icon'], key='guild_icon', enable_events=True)],
+                    [sg.Checkbox('Exibir botão de convite do bot (quando disponível).',
+                                 default=self.config['bot_invite'], key='bot_invite', enable_events=True)],
+                    [sg.Checkbox('Carregar presence em todas as instâncias do discord (Beta).',
+                                 default=self.config['load_all_instances'], key='load_all_instances', enable_events=True)],
                 ], expand_x=True, key="asset_tab"),
             ]
         ]
@@ -278,7 +276,7 @@ class RPCGui:
                 except Exception as e:
                     self.update_log(repr(e), exception=e)
                     continue
-                Thread(target=self.client.start_ws).start()
+                self.client.start_ws()
                 self.rpc_started = True
                 self.window['start_presence'].update(disabled=True)
                 self.window["stop_presence"].update(disabled=False)
@@ -332,4 +330,7 @@ class RPCGui:
 
             for bot_id, bot_data in user_data.items():
 
-                self.client.update(user_id, bot_id, bot_data, refresh_timestamp=False)
+                try:
+                    self.client.process_data(user_id, bot_id, bot_data, refresh_timestamp=False)
+                except Exception as e:
+                    self.update_log(repr(e), log_type="error")

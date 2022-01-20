@@ -5,6 +5,8 @@ import os
 import pprint
 import time
 import traceback
+from threading import Thread
+
 from main_window import RPCGui
 import websockets
 from discoIPC.ipc import DiscordIPC
@@ -41,7 +43,7 @@ class MyDiscordIPC(DiscordIPC):
         if activity:
             self.last_data = activity
         else:
-            self.activity.clear()
+            self.last_data.clear()
 
         try:
             super().update_activity(activity=activity)
@@ -97,13 +99,18 @@ def fix_characters(text: str, limit=30):
     return text
 
 
+loop = asyncio.new_event_loop()
+
+_t = Thread(target=loop.run_forever)
+_t.daemon = True
+_t.start()
+
 class RpcClient:
 
     def __init__(self):
         self.last_data = {}
         self.tasks = []
         self.main_task = None
-        self.loop = asyncio.get_event_loop()
         self.config = read_config()
         self.langs = {}
 
@@ -115,6 +122,14 @@ class RpcClient:
 
         self.users_rpc = {
             # user -> {bot: presence}
+        }
+
+        self.users_socket = {
+            # url -> [ids]
+        }
+
+        self.bots_socket = {
+            # url -> [ids]
         }
 
         self.gui = RPCGui(self)
@@ -198,15 +213,56 @@ class RpcClient:
 
     def exit(self):
         for t in self.tasks:
-            t.cancel()
-        try:
-            self.loop.call_soon_threadsafe(self.loop.stop)
-        except:
-            pass
+            loop.call_soon_threadsafe(t.cancel)
+
+
+    def process_data(self, user_id: int, bot_id: int, data: dict, url: str = "", refresh_timestamp=True):
+
+        data = dict(data)
+
+        public = data.pop("public", True)
+
+        if data['op'] == "update":
+
+            self.update(user_id, bot_id, data, refresh_timestamp=refresh_timestamp)
+
+        elif data['op'] == "idle":
+
+            try:
+                self.last_data[user_id][bot_id] = dict(data)
+            except KeyError:
+                self.last_data[user_id] = {bot_id: dict(data)}
+
+            payload = self.get_idle_data(bot_id, data, public=public)
+
+            self.update(user_id, bot_id, payload, refresh_timestamp=refresh_timestamp)
+
+        elif data['op'] == "close":
+
+            try:
+                self.users_socket[url].remove(user_id)
+            except:
+                pass
+
+            try:
+                del self.last_data[user_id][bot_id]
+            except:
+                pass
+
+            self.update(user_id, bot_id, {})
+
+        else:
+            self.gui.update_log(f"unknow op: {data}", tooltip=True, log_type="warning")
+
 
     def update(self, user_id: int, bot_id: int, data: dict, refresh_timestamp=True):
 
         data = dict(data)
+
+        try:
+            data.pop("op")
+        except:
+            pass
 
         self.check_presence(user_id, bot_id)
 
@@ -217,11 +273,8 @@ class RpcClient:
                 pass
             return
 
-        thumb = data.pop("thumb", self.config["assets"]["app"]).replace("mqdefault", "default")
-
         payload = {
             "assets": {
-                "large_image": self.config["assets"]["app"] if not self.config["show_thumbnail"] else thumb,
                 "small_image": "https://i.ibb.co/qD5gvKR/cd.gif"
             },
             "timestamps": {}
@@ -231,9 +284,17 @@ class RpcClient:
 
         info = data.pop("info", None)
 
+        thumb = data.pop("thumb", None)
+
         payload.update(data)
 
+        if not payload["assets"].get("large_image"):
+            payload["assets"]["large_image"] = thumb
+
         if info and track:
+
+            if self.config["show_thumbnail"]:
+                payload["assets"]["large_image"] = track["thumb"]
 
             if self.config["show_guild_details"]:
                 payload['assets']['large_text'] = self.get_lang("server") + f': {info["guild"]["name"]} | ' + self.get_lang(
@@ -371,6 +432,7 @@ class RpcClient:
 
         try:
 
+            #pprint.pprint(payload)
             self.users_rpc[user_id][bot_id].update_activity(payload)
 
         except IPCError:
@@ -388,7 +450,7 @@ class RpcClient:
                     self.users_rpc[user_id][bot_id] = rpc
                     user_clients[user_id]["pipe"] = i
                     self.gui.update_log(f"RPC reconectado ao discord: {user_clients[user_id]['user']} | pipe: {i}")
-                    self.update(user_id, bot_id, data)
+                    self.update(user_id, bot_id, data, refresh_timestamp=refresh_timestamp)
                     return
                 except:
                     continue
@@ -396,9 +458,52 @@ class RpcClient:
             del self.users_rpc[user_id]
             del user_clients[user_id]
 
-        except Exception:
+        except Exception as e:
             traceback.print_exc()
+            self.gui.update_log("", exception=e)
             pprint.pprint(payload)
+
+    def get_idle_data(self, bot_id: int, data: dict, public=False):
+
+        data = dict(data)
+
+        text_idle = self.get_lang("idle")
+
+        guild_invite = None
+        try:
+            if self.config["bot_invite"]:
+                guild_invite = data["info"]["guild"]["vc_url"]
+        except KeyError:
+            pass
+
+        payload = {
+            "thumb": data.pop("thumb", None),
+            "assets": {},
+            "details": text_idle[0],
+        }
+
+        if not self.config["show_guild_details"]:
+            payload["assets"]["large_text"] = self.get_lang("server") + f': {data["info"]["guild"]["name"]} | ' \
+                                              + self.get_lang("channel") + f': #{data["info"]["channel"]["name"]} | ' \
+                                              + self.get_lang("listeners") + f': {data["info"]["members"]}'
+
+        if len(text_idle) > 1:
+            payload['state'] = text_idle[1]
+
+        buttons = []
+
+        if public:
+            invite = f"https://discord.com/api/oauth2/authorize?client_id={bot_id}&permissions=8&scope=bot%20applications.commands"
+
+            buttons.append({"label": self.get_lang("invite"), "url": invite})
+
+        if self.config["show_guild_details"] and guild_invite:
+            buttons.append({"label": "Entrar no canal de voz.", "url": guild_invite})
+
+        if buttons:
+            payload["buttons"] = buttons
+
+        return payload
 
     def get_lang(self, key: str) -> str:
 
@@ -411,10 +516,10 @@ class RpcClient:
             txt = self.langs["en-us"].get(key)
         return txt
 
-    async def clear_users_presences(self, users: set, bots: set):
+    async def clear_users_presences(self, uri: str):
 
-        for bot_id in bots:
-            for user_id in users:
+        for bot_id in self.bots_socket[uri]:
+            for user_id in self.users_socket[uri]:
                 try:
                     self.users_rpc[user_id][bot_id].clear()
                 except:
@@ -426,16 +531,25 @@ class RpcClient:
 
         while True:
 
-            bots = set()
-            users = set()
-
             try:
                 async with websockets.connect(uri) as ws:
 
+                    try:
+                        self.bots_socket[uri].clear()
+                    except:
+                        pass
+
+                    try:
+                        self.bots_socket[uri].clear()
+                    except:
+                        pass
+
+                    self.bots_socket[uri] = set()
+                    self.users_socket[uri] = set()
+
                     self.gui.update_log(f"Websocket conectado: {uri}", tooltip=True)
 
-                    for i in user_clients:
-                        await ws.send(json.dumps({"op": "rpc_update", "user_id": i}))
+                    await ws.send(json.dumps({"op": "rpc_update", "user_ids": list(user_clients)}))
 
                     async for msg in ws:
 
@@ -445,15 +559,15 @@ class RpcClient:
                             traceback.print_exc()
                             continue
 
-                        op = data.pop("op", None)
-
-                        if not op:
+                        try:
+                            if not data['op']:
+                                continue
+                        except:
                             continue
 
-                        public = data.pop("public", True)
                         bot_id = data.pop("bot_id", None)
 
-                        bots.add(bot_id)
+                        self.bots_socket[uri].add(bot_id)
 
                         users_ws = data.pop("users", None)
 
@@ -471,117 +585,53 @@ class RpcClient:
 
                         for u_id in users_ws:
 
-                            users.add(u_id)
+                            self.users_socket[uri].add(u_id)
 
                             try:
                                 user = user_clients[u_id]["user"]
                             except KeyError:
                                 continue
 
-                            self.gui.update_log(f"op: {op} | {user} [{u_id}] | bot: {bot_id}")
+                            self.gui.update_log(f"op: {data['op']} | {user} [{u_id}] | bot: {bot_id}")
 
                             try:
                                 self.last_data[u_id][bot_id] = data
                             except KeyError:
                                 self.last_data[u_id] = {bot_id: data}
 
-                            if op == "update":
-
-                                self.update(u_id, bot_id, data)
-
-                            elif op == "idle":
-
-                                text_idle = self.get_lang("idle")
-
-                                try:
-                                    if self.config["guild_icon"]:
-                                        data["thumb"] = data["info"]["guild"]["icon"]
-                                except KeyError:
-                                    pass
-
-                                thumb = data.pop("thumb", self.config["assets"]["app"])
-
-                                if not self.config["guild_icon"]:
-                                    thumb = self.config["assets"]["app"]
-
-                                try:
-                                    guild_invite = data["info"]["guild"]["vc_url"]
-                                except KeyError:
-                                    guild_invite = None
-
-                                payload = {
-                                    "assets": {
-                                        "large_image": thumb
-                                    },
-                                    "details": text_idle[0],
-                                }
-
-                                if not self.config.get("privacy"):
-                                    payload["assets"]["large_text"] = self.get_lang("server") + f': {data["info"]["guild"]["name"]} | ' \
-                                                            + self.get_lang("channel") + f': #{data["info"]["channel"]["name"]} | '\
-                                                            + self.get_lang("listeners") + f': {data["info"]["members"]}'
-
-                                if len(text_idle) > 1:
-                                    payload['state'] = text_idle[1]
-
-                                buttons = []
-
-                                if public:
-                                    invite = f"https://discord.com/api/oauth2/authorize?client_id={bot_id}&permissions=8&scope=bot%20applications.commands"
-
-                                    buttons.append({"label": self.get_lang("invite"), "url": invite})
-
-                                if not self.config.get("privacy") and guild_invite:
-                                    buttons.append({"label": "Entrar no canal de voz", "url": guild_invite})
-
-                                if buttons:
-                                    payload["buttons"] = buttons
-
-                                self.update(u_id, bot_id, payload)
-
-                            elif op == "close":
-
-                                try:
-                                    users.remove(u_id)
-                                except Exception:
-                                    pass
-
-                                try:
-                                    del self.last_data[u_id][bot_id]
-                                except:
-                                    pass
-
-                                self.update(u_id, bot_id, {})
-
-                            else:
-                                self.gui.update_log(f"unknow op: {msg.data}", tooltip=True, log_type="warning")
-
+                            self.process_data(u_id, bot_id, data)
 
             except (websockets.ConnectionClosedError, ConnectionResetError, websockets.InvalidStatusCode) as e:
+
                 self.gui.update_log(f"Conexão perdida com o servidor: {uri} | Reconectando em {backoff} seg. {repr(e)}",
                                     tooltip=True, log_type="warning")
-                await self.clear_users_presences(users, bots)
-                await asyncio.sleep(backoff)
+                await self.clear_users_presences(uri)
+
+                try:
+                    if e.code == 1005:
+                        return
+                except AttributeError:
+                    pass
+
+                await asyncio.sleep(backoff*10)
                 backoff *= 1.3
             except ConnectionRefusedError:
-                await asyncio.sleep(500)
+                self.gui.update_log(f"Servidor indisponível: {uri} | Reconectando em 10 minutos.", log_type="warning")
+                await asyncio.sleep(600)
             except Exception as e:
                 traceback.print_exc()
                 self.gui.update_log(f"Erro na conexão: {uri} | {repr(e)}", tooltip=True, log_type="error")
-                await self.clear_users_presences(users, bots)
+                await self.clear_users_presences(uri)
                 await asyncio.sleep(60)
 
 
     async def handler(self):
-        self.tasks = [self.loop.create_task(self.handle_socket(uri)) for uri in list(set(self.config["urls"]))]
+        self.tasks = [loop.create_task(self.handle_socket(uri)) for uri in list(set(self.config["urls"]))]
         await asyncio.wait(self.tasks)
 
 
     def start_ws(self):
-        try:
-            self.loop.run_until_complete(self.handler())
-        except RuntimeError:
-            pass
+        asyncio.run_coroutine_threadsafe(self.handler(), loop)
 
 
 if __name__ == "__main__":
