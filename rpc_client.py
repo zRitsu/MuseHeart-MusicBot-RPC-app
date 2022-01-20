@@ -292,7 +292,7 @@ class RpcClient:
         if info and track:
 
             if self.config["show_thumbnail"]:
-                payload["assets"]["large_image"] = track["thumb"]
+                payload["assets"]["large_image"] = track["thumb"].replace("mqdefault", "default")
 
             if self.config["show_guild_details"]:
                 payload['assets']['large_text'] = self.get_lang("server") + f': {info["guild"]["name"]} | ' + self.get_lang(
