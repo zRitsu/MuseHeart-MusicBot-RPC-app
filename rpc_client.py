@@ -157,8 +157,6 @@ class RpcClient:
                 rpc.connect()
                 time.sleep(0.5)
                 rpc.disconnect()
-                if not self.config.get("load_all_instances", True):
-                    break
             except:
                 continue
 
@@ -167,6 +165,8 @@ class RpcClient:
             user_clients[int(user_id_)] = {"pipe": i, "user": user}
             rpc.user = user
             self.gui.update_log(f"RPC conectado: {user} [{user_id_}] pipe: {i}")
+            if not self.config["load_all_instances"]:
+                break
 
         if not user_clients:
             raise Exception("Não foi detectado nenhuma instância do discord em execução.")
