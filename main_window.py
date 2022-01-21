@@ -76,8 +76,6 @@ class RPCGui:
             [
                 sg.Frame("", [
                     [sg.Text("Logo princpal (idle/thumb desativada):")],
-                    [sg.InputText(default_text=self.config["assets"]["app"], expand_x=True, key="asset_app",
-                                  enable_events=True)],
                     [sg.Text("Loop/Repetição:")],
                     [sg.InputText(default_text=self.config["assets"]["loop"], expand_x=True, key="asset_loop",
                                   enable_events=True)],
