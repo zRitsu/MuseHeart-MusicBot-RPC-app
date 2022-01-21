@@ -451,7 +451,7 @@ class RpcClient:
 
         except Exception as e:
             traceback.print_exc()
-            self.gui.update_log("", exception=e)
+            self.gui.update_log(repr(e), exception=e)
             pprint.pprint(payload)
 
     def get_idle_data(self, bot_id: int, data: dict):
@@ -574,7 +574,7 @@ class RpcClient:
                             except KeyError:
                                 continue
 
-                            self.gui.update_log(f"op: {data['op']} | {user} [{u_id}] | bot: {bot_id}")
+                            self.gui.update_log(f"op: {data['op']} | {user} [{u_id}] | bot: {bot_id}", log_type="info")
 
                             try:
                                 self.last_data[u_id][bot_id] = data

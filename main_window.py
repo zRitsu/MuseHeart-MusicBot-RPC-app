@@ -1,15 +1,16 @@
 from __future__ import annotations
 
-import pprint
 import sys
 import time
 import traceback
 from PySimpleGUI import PySimpleGUI as sg
 from psgtray import SystemTray
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
+
 if TYPE_CHECKING:
     from rpc_client import RpcClient
 
+MLINE_KEY = '-MLINE-'+sg.WRITE_ONLY_KEY
 
 class RPCGui:
 
@@ -19,11 +20,7 @@ class RPCGui:
         self.config = self.client.config
         self.ready = False
 
-        self.log = {
-            "regular": [],
-            "warning": [],
-            "error": []
-        }
+        self.log = ""
 
         self.langs = self.client.langs
 
@@ -104,44 +101,6 @@ class RPCGui:
             ]
         ]
 
-        tabLogs = [
-            [
-                sg.TabGroup(
-                    [
-                        [
-                            sg.Tab('Logs', [
-                                [
-                                    sg.Frame("", [
-                                        [sg.Multiline("\n".join(self.log['regular'][-7:]), background_color="Black",
-                                                      text_color="Cyan", key=f"log_regular",
-                                                      disabled=True, autoscroll=True, expand_x=True, size=(0, 6))]
-                                    ], expand_x=True, background_color="Black", title_color="White")
-                                ],
-                            ]),
-                            sg.Tab('Alertas', [
-                                [
-                                    sg.Frame("", [
-                                        [sg.Multiline("\n".join(self.log['warning'][-7:]), background_color="Black",
-                                                      text_color="Yellow", key="log_warning",
-                                                      disabled=True, autoscroll=True, expand_x=True, size=(0, 6))]
-                                    ], expand_x=True, background_color="Black", title_color="White")
-                                ],
-                            ]),
-                            sg.Tab('Erros', [
-                                [
-                                    sg.Frame("", [
-                                        [sg.Multiline("\n".join(self.log['error'][-7:]), background_color="Black",
-                                                      text_color="Red", key="log_error",
-                                                      disabled=True, autoscroll=True, expand_x=True, size=(0, 6))]
-                                    ], expand_x=True, background_color="Black", title_color="White")
-                                ],
-                            ])
-                        ]
-                    ], expand_x=True
-                )
-            ]
-        ]
-
         tabgroup = [
             [
                 sg.TabGroup(
@@ -155,30 +114,47 @@ class RPCGui:
                 ),
             ],
             [
-                [tabLogs],
+                [
+                    [
+                        sg.Frame("", [
+                            [sg.Multiline(background_color="Black", key=MLINE_KEY, disabled=True,
+                                          autoscroll=True, expand_x=True, size=(0, 6))]], expand_x=True,
+                                 background_color="Black", title_color="White")
+                    ]
+                ]                ,
                 [sg.Button("Iniciar Presence", font=('MS Sans Serif', 13, 'bold'), key="start_presence",
                            disabled=self.rpc_started), sg.Button("Parar Presence", key="stop_presence",
                                                                  disabled=not self.rpc_started,
                                                                  font=('MS Sans Serif', 13, 'bold')),
                  sg.Button("Limpar Log", font=('MS Sans Serif', 13, 'bold'), key="clear_log"),
                  sg.Button("Fechar", key="exit", font=('MS Sans Serif', 13, 'bold')),
-                 sg.Button("Salvar Alterações", font=('MS Sans Serif', 13, 'bold'), key="save_changes", visible=False),]
-
+                 sg.Button("Salvar Alterações", font=('MS Sans Serif', 13, 'bold'), key="save_changes", visible=False)]
             ]
         ]
 
         return sg.Window(self.appname, tabgroup, finalize=True, enable_close_attempted_event=True)
 
-    def update_log(self, text, tooltip=False, log_type="regular", exception: Exception = None):
+    def update_log(self, text: str, tooltip: bool = False, log_type = Literal["normal", "warning", "error", "info"],
+                   exception: Exception = None):
+
         if not self.ready:
             time.sleep(2)
         if exception:
             sg.popup_error(f'Ocorreu um erro!', exception, traceback.format_exc())
             log_type = "error"
-        self.log[log_type].append(text)
-        self.window[f'log_{log_type}'].update("\n".join(self.log[log_type][-7:]))
+
+        if log_type == "warning":
+            self.window[MLINE_KEY].update(text + "\n", text_color_for_value='yellow', append=True)
+        elif log_type == "error":
+            self.window[MLINE_KEY].update(text + "\n", text_color_for_value='red', append=True)
+        elif log_type == "info":
+            self.window[MLINE_KEY].update(text + "\n", text_color_for_value='cyan', append=True)
+        else:
+            self.window[MLINE_KEY].update(text + "\n", text_color_for_value='green2', append=True)
+
         if tooltip and self.tray.tray_icon.visible:
             self.tray.show_message()
+
         self.ready = True
 
 
@@ -229,9 +205,7 @@ class RPCGui:
                 self.tray.window = self.window
 
             elif event == "clear_log":
-                for l in self.log:
-                    self.log[l].clear()
-                    self.update_log("", log_type=l)
+                self.window[MLINE_KEY].update("Log limpo com sucesso!\n", text_color_for_value='green2')
 
             elif event == "url_list":
                 try:
