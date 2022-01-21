@@ -417,20 +417,13 @@ class RpcClient:
 
             payload['state'] = state
 
-            #payload["type"] = 0
-
-            if self.config["show_guild_details"] and len(buttons) < 2:
-                try:
-                    buttons.append({"label": "Entrar no canal de voz", "url": info["guild"]["vc_url"]})
-                except KeyError:
-                    pass
+            payload["type"] = 2
 
             if buttons:
                 payload["buttons"] = buttons
 
         try:
 
-            #pprint.pprint(payload)
             self.users_rpc[user_id][bot_id].update_activity(payload)
 
         except IPCError:
@@ -467,13 +460,6 @@ class RpcClient:
 
         text_idle = self.get_lang("idle")
 
-        vc_button = None
-        if self.config["show_guild_details"]:
-            try:
-                vc_button = data["info"]["guild"]["vc_url"]
-            except KeyError:
-                pass
-
         payload = {
             "thumb": data.pop("thumb", None),
             "assets": {},
@@ -496,9 +482,6 @@ class RpcClient:
             invite = f"https://discord.com/api/oauth2/authorize?client_id={bot_id}&permissions=8&scope=bot%20applications.commands"
 
             buttons.append({"label": self.get_lang("invite"), "url": invite})
-
-        if vc_button:
-            buttons.append({"label": "Entrar no canal de voz.", "url": vc_button})
 
         if buttons:
             payload["buttons"] = buttons

@@ -181,6 +181,18 @@ class RPCGui:
             self.tray.show_message()
         self.ready = True
 
+
+    def update_buttons(self, enable: list = None, disable: list =None):
+
+        if enable:
+            for e in enable:
+                self.window[e].update(disabled=False)
+
+        if disable:
+            for e in disable:
+                self.window[e].update(disabled=True)
+
+
     def window_loop(self):
 
         while True:
@@ -275,16 +287,20 @@ class RPCGui:
                     continue
                 self.client.start_ws()
                 self.rpc_started = True
-                self.window['start_presence'].update(disabled=True)
-                self.window["stop_presence"].update(disabled=False)
+                self.update_buttons(
+                    enable=["stop_presence"],
+                    disable=["start_presence", "load_all_instances"]
+                )
 
             elif event == "stop_presence":
                 self.client.close_app_instances()
                 self.client.exit()
                 time.sleep(2)
                 self.update_log("RPC Finalizado!\n-----", tooltip=True)
-                self.window["stop_presence"].update(disabled=True)
-                self.window['start_presence'].update(disabled=False)
+                self.update_buttons(
+                    disable=["stop_presence"],
+                    enable=["start_presence", "load_all_instances"]
+                )
                 self.rpc_started = False
 
             elif event == "save_changes":
