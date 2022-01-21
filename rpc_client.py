@@ -417,7 +417,7 @@ class RpcClient:
 
             payload['state'] = state
 
-            payload["type"] = 2
+            #payload["type"] = 3
 
             if buttons:
                 payload["buttons"] = buttons
