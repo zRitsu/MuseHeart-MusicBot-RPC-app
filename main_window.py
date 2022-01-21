@@ -265,7 +265,7 @@ class RPCGui:
             elif event == "start_presence":
 
                 if not self.config["urls"]:
-                    sg.popup_ok(f"Você deve adicionar pelo menos um link WS antes de inicar presence!")
+                    sg.popup_ok(f"Você deve adicionar pelo menos um link WS antes de iniciar presence!")
                     continue
                 self.client.gui = self
                 try:
