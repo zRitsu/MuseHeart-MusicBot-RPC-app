@@ -95,7 +95,7 @@ class RPCGui:
                                 enable_events=True)],
                     [sg.InputText(expand_x=True, key="url_text"),
                      sg.Button("Adicionar", key="btn_add_url", enable_events=True),
-                     sg.Button("Editar", key="btn_edit_url", enable_events=True),
+                     sg.Button("Atualizar URL", key="btn_update_url", enable_events=True),
                      sg.Button("Remover", key="btn_remove_url", enable_events=True)]
                 ], expand_x=True)
             ]
@@ -225,10 +225,10 @@ class RPCGui:
                     self.config["urls"].append(values['url_text'])
                     self.update_urls()
 
-            elif event == "btn_edit_url":
+            elif event == "btn_update_url":
 
                 if not values["url_list"]:
-                    sg.popup_ok(f"Selecione um link para editar!")
+                    sg.popup_ok(f"Selecione um link para atualizar/modificar!")
 
                 elif not values["url_text"].startswith(("ws://", "wss://")):
                     sg.popup_ok(f"Você não inseriu um link válido!\n\nExemplo: ws://aaa.bbb.com:80/ws")
