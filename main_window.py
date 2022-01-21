@@ -92,9 +92,8 @@ class RPCGui:
                 sg.Frame("", [
                     [sg.Listbox(values=self.config["urls"], size=(60, 13),expand_x=True, key="url_list",
                                 enable_events=True)],
-                    [sg.InputText(expand_x=True, key="url_text"),
-                     sg.Button("Adicionar", key="btn_add_url", enable_events=True),
-                     sg.Button("Atualizar URL", key="btn_update_url", enable_events=True),
+                    [sg.Button("Adicionar", key="btn_add_url", enable_events=True),
+                     sg.Button("Editar", key="btn_edit_url", enable_events=True),
                      sg.Button("Remover", key="btn_remove_url", enable_events=True)]
                 ], expand_x=True)
             ]
@@ -106,10 +105,10 @@ class RPCGui:
                     [
                         [
                             sg.Tab('Config', tab_config, element_justification='center'),
-                            sg.Tab('Socket URL\'s', tab_urls),
+                            sg.Tab('Socket URL\'s', tab_urls, key="sockets_url"),
                             sg.Tab('Assets', tab_assets, element_justification='center')
                         ]
-                    ]
+                    ], key="main_tab"
                 ),
             ],
             [
@@ -206,39 +205,50 @@ class RPCGui:
             elif event == "clear_log":
                 self.window[MLINE_KEY].update("Log limpo com sucesso!\n", text_color_for_value='green2')
 
-            elif event == "url_list":
-                try:
-                    self.window["url_text"].update(values[event][0])
-                except IndexError:
-                    continue
-
             elif event == "btn_add_url":
 
-                if not values["url_text"].startswith(("ws://", "wss:/")):
-                    sg.popup_ok(f"Você não inseriu um link válido!\n\nExemplo: ws://aaa.bbb.com:80/ws")
+                while True:
 
-                elif values["url_text"] in self.window['url_list'].Values:
-                    sg.popup_ok(f"O link já está na lista!")
+                    url = sg.PopupGetText("Adicione o link do RPC.")
 
-                else:
-                    self.config["urls"].append(values['url_text'])
-                    self.update_urls()
+                    if url is None:
+                        break
 
-            elif event == "btn_update_url":
+                    if not url.startswith(("ws://", "wss:/")):
+                        sg.popup_ok(f"Você não inseriu um link válido!\n\nExemplo: ws://aaa.bbb.com:80/ws")
+
+                    elif url in self.window['url_list'].Values:
+                        sg.popup_ok(f"O link já está na lista!")
+
+                    else:
+                        self.config["urls"].append(url)
+                        self.update_urls()
+                        break
+
+            elif event == "btn_edit_url":
 
                 if not values["url_list"]:
-                    sg.popup_ok(f"Selecione um link para atualizar/modificar!")
+                    sg.popup_ok(f"Selecione um link para editar!")
+                    continue
 
-                elif not values["url_text"].startswith(("ws://", "wss://")):
-                    sg.popup_ok(f"Você não inseriu um link válido!\n\nExemplo: ws://aaa.bbb.com:80/ws")
+                while True:
 
-                elif values["url_text"] == values["url_list"][0]:
-                    sg.popup_ok(f"Você deve modificar o link!")
+                    url = sg.PopupGetText("Edite o link do RPC.", default_text=values["url_list"][0])
 
-                else:
-                    self.config["urls"].remove(values["url_list"][0])
-                    self.config["urls"].append(values["url_text"])
-                    self.update_urls()
+                    if url is None:
+                        break
+
+                    if not url.startswith(("ws://", "wss:/")):
+                        sg.popup_ok(f"Você não inseriu um link válido!\n\nExemplo: ws://aaa.bbb.com:80/ws")
+
+                    elif url == values["url_list"][0]:
+                        sg.popup_ok(f"Você deve colocar um link diferente!")
+
+                    else:
+                        self.config["urls"].remove(values["url_list"][0])
+                        self.config["urls"].append(url)
+                        self.update_urls()
+                        break
 
             elif event == "btn_remove_url":
                 if not values["url_list"]:
@@ -251,6 +261,7 @@ class RPCGui:
 
                 if not self.config["urls"]:
                     sg.popup_ok(f"Você deve adicionar pelo menos um link WS antes de iniciar presence!")
+                    self.window["sockets_url"].select()
                     continue
                 self.client.gui = self
                 try:
@@ -299,7 +310,6 @@ class RPCGui:
 
     def update_urls(self):
         self.window['url_list'].update(values=self.config["urls"])
-        self.window["url_text"].update("")
         self.update_data(process_rpc=False)
 
 
