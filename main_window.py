@@ -31,8 +31,7 @@ class RPCGui:
 
         self.window = self.get_window()
         menu = ['', ['Abrir Janela', 'Fechar App']]
-        self.tray = SystemTray(menu, single_click_events=True, window=self.window, tooltip=self.appname,
-                               icon="icon.ico")
+        self.tray = SystemTray(menu, single_click_events=True, window=self.window, tooltip=self.appname)
         self.tray.hide_icon()
         self.window_loop()
 
@@ -168,7 +167,7 @@ class RPCGui:
             ]
         ]
 
-        return sg.Window(self.appname, tabgroup, finalize=True, enable_close_attempted_event=True, icon="icon.ico")
+        return sg.Window(self.appname, tabgroup, finalize=True, enable_close_attempted_event=True)
 
     def update_log(self, text, tooltip=False, log_type="regular", exception: Exception = None):
         if not self.ready:
