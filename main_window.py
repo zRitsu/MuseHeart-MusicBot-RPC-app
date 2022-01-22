@@ -64,7 +64,7 @@ class RPCGui:
                                  default=self.config['bot_invite'], key='bot_invite', enable_events=True)],
                     [sg.Checkbox('Carregar presence em todas as instâncias do discord (Beta).',
                                  default=self.config['load_all_instances'], key='load_all_instances', enable_events=True)],
-                ], expand_x=True, key="asset_tab"),
+                ], expand_x=True),
             ]
         ]
 
@@ -91,7 +91,7 @@ class RPCGui:
             [
                 sg.Frame("", [
                     [sg.Listbox(values=self.config["urls"], size=(60, 13),expand_x=True, key="url_list",
-                                enable_events=True)],
+                                bind_return_key=True)],
                     [sg.Button("Adicionar", key="btn_add_url", enable_events=True),
                      sg.Button("Editar", key="btn_edit_url", enable_events=True),
                      sg.Button("Remover", key="btn_remove_url", enable_events=True)]
@@ -225,7 +225,7 @@ class RPCGui:
                         self.update_urls()
                         break
 
-            elif event == "btn_edit_url":
+            elif event in ("btn_edit_url", "url_list"):
 
                 if not values["url_list"]:
                     sg.popup_ok(f"Selecione um link para editar!")
