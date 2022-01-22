@@ -466,7 +466,7 @@ class RpcClient:
             "details": text_idle[0],
         }
 
-        if not self.config["show_guild_details"]:
+        if self.config["show_guild_details"]:
             payload["assets"]["large_text"] = self.get_lang("server") + f': {data["info"]["guild"]["name"]} | ' \
                                               + self.get_lang("channel") + f': #{data["info"]["channel"]["name"]} | ' \
                                               + self.get_lang("listeners") + f': {data["info"]["members"]}'
