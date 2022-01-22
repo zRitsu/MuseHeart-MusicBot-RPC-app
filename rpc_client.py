@@ -548,6 +548,7 @@ class RpcClient:
                             continue
 
                         bot_id = data.pop("bot_id", None)
+                        bot_name = data.pop("bot_name", None)
 
                         self.bots_socket[uri].add(bot_id)
 
@@ -574,7 +575,9 @@ class RpcClient:
                             except KeyError:
                                 continue
 
-                            self.gui.update_log(f"op: {data['op']} | {user} [{u_id}] | bot: {bot_id}", log_type="info")
+                            self.gui.update_log(f"op: {data['op']} | {user} {u_id} | "
+                                                f"bot: {(bot_name + ' ') if bot_name else ''}[{bot_id}]",
+                                                log_type="info")
 
                             try:
                                 self.last_data[u_id][bot_id] = data
