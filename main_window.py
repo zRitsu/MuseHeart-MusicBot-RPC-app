@@ -90,8 +90,15 @@ class RPCGui:
         tab_urls = [
             [
                 sg.Frame("", [
-                    [sg.Listbox(values=self.config["urls"], size=(60, 13),expand_x=True, key="url_list",
-                                bind_return_key=True)],
+                    [sg.Text("Links Ativados:",  size=(39, 1), font=("arial",11), justification="center",
+                             background_color="green2"),
+                     sg.Text("Links Desativados:", size=(39, 1), font=("arial",11), justification="center",
+                             text_color="white", background_color="red")],
+                    [sg.Listbox(values=self.config["urls"], size=(30, 11),expand_x=True, key="url_list",
+                                horizontal_scroll=True, bind_return_key=True),
+                    sg.Listbox(values=self.config["urls_disabled"], size=(30, 11), expand_x=True,
+                                horizontal_scroll=True, key="url_list_disabled", bind_return_key=True)
+                    ],
                     [sg.Button("Adicionar", key="btn_add_url", enable_events=True),
                      sg.Button("Editar", key="btn_edit_url", enable_events=True),
                      sg.Button("Remover", key="btn_remove_url", enable_events=True)]
@@ -125,6 +132,7 @@ class RPCGui:
                                                                  disabled=not self.rpc_started,
                                                                  font=('MS Sans Serif', 13, 'bold')),
                  sg.Button("Limpar Log", font=('MS Sans Serif', 13, 'bold'), key="clear_log"),
+                 sg.Button("Ocultar", key="tray", font=('MS Sans Serif', 13, 'bold')),
                  sg.Button("Fechar", key="exit", font=('MS Sans Serif', 13, 'bold')),
                  sg.Button("Salvar Alterações", font=('MS Sans Serif', 13, 'bold'), key="save_changes", visible=False)]
             ]
@@ -173,7 +181,7 @@ class RPCGui:
 
             event, values = self.window.read()
 
-            if event in (sg.WIN_CLOSED, 'exit'):
+            if event in (sg.WIN_CLOSED, 'exit', sg.WIN_CLOSE_ATTEMPTED_EVENT):
                 self.client.exit()
                 break
 
@@ -190,7 +198,7 @@ class RPCGui:
                     self.client.exit()
                     break
 
-            elif event == sg.WIN_CLOSE_ATTEMPTED_EVENT:
+            elif event == "tray":
                 self.window.hide()
                 self.tray.show_icon()
                 self.tray.show_message(self.appname, 'Executando em segundo plano.')
@@ -217,7 +225,7 @@ class RPCGui:
                     if not url.startswith(("ws://", "wss:/")):
                         sg.popup_ok(f"Você não inseriu um link válido!\n\nExemplo: ws://aaa.bbb.com:80/ws")
 
-                    elif url in self.window['url_list'].Values:
+                    elif url in self.window['url_list'].Values or self.window['url_list_disabled']:
                         sg.popup_ok(f"O link já está na lista!")
 
                     else:
@@ -225,10 +233,28 @@ class RPCGui:
                         self.update_urls()
                         break
 
-            elif event in ("btn_edit_url", "url_list"):
+            elif event ==  "url_list":
 
                 if not values["url_list"]:
-                    sg.popup_ok(f"Selecione um link para editar!")
+                    continue
+
+                url = self.config["urls"].pop(self.config["urls"].index(values["url_list"][0]))
+                self.config["urls_disabled"].append(url)
+                self.update_urls()
+
+            elif event == "url_list_disabled":
+
+                if not values["url_list_disabled"]:
+                    continue
+
+                url = self.config["urls_disabled"].pop(self.config["urls_disabled"].index(values["url_list_disabled"][0]))
+                self.config["urls"].append(url)
+                self.update_urls()
+
+            elif event == "btn_edit_url":
+
+                if not values["url_list"]:
+                    sg.popup_ok(f"Selecione um link da lista de links ativados para editar!")
                     continue
 
                 while True:
@@ -252,7 +278,7 @@ class RPCGui:
 
             elif event == "btn_remove_url":
                 if not values["url_list"]:
-                    sg.popup_ok(f"Selecione um link para remover!")
+                    sg.popup_ok(f"Selecione um da lista de links ativados para remover!")
                     continue
                 self.config["urls"].remove(values["url_list"][0])
                 self.update_urls()
@@ -310,6 +336,7 @@ class RPCGui:
 
     def update_urls(self):
         self.window['url_list'].update(values=self.config["urls"])
+        self.window['url_list_disabled'].update(values=self.config["urls_disabled"])
         self.update_data(process_rpc=False)
 
 
