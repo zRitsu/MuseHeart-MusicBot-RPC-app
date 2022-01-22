@@ -140,7 +140,8 @@ class RPCGui:
 
         return sg.Window(self.appname, tabgroup, finalize=True, enable_close_attempted_event=True)
 
-    def update_log(self, text: str, tooltip: bool = False, log_type = Literal["normal", "warning", "error", "info"],
+    def update_log(self, text: str, tooltip: bool = False,
+                   log_type: Literal["normal", "warning", "error", "info"] = "normal",
                    exception: Exception = None):
 
         if not self.ready:
