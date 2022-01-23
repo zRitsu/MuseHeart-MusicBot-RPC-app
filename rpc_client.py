@@ -80,8 +80,6 @@ class IPCError(Exception):
 
 user_clients = {}
 
-dummy_app = "921606662467498045"
-
 replaces = [
     ('&quot;', '"'),
     ('&amp;', '&'),
@@ -178,7 +176,7 @@ class RpcClient:
         for i in range(10):
 
             try:
-                rpc = MyDiscordIPC(dummy_app, pipe=i)
+                rpc = MyDiscordIPC(str(config["dummy_app_id"]), pipe=i)
                 rpc.connect()
                 time.sleep(0.5)
                 rpc.disconnect()
@@ -557,7 +555,7 @@ class RpcClient:
 
                     self.gui.update_log(f"Websocket conectado: {uri}", tooltip=True)
 
-                    await ws.send(json.dumps({"op": "rpc_update", "user_ids": list(user_clients)}))
+                    await ws.send(json.dumps({"op": "rpc_update", "user_ids": list(user_clients), "version": 2.0}))
 
                     async for msg in ws:
                         try:
