@@ -141,7 +141,7 @@ class RpcClient:
                 lang_data = self.load_json(f"./langs/{f}")
 
                 if not (lang:=f[:-5]) in self.langs:
-                    self.langs.update({lang: lang_data})
+                    self.langs[lang] = lang_data
                 else:
                     self.langs[lang].update(lang_data)
 
