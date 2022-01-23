@@ -6,6 +6,7 @@ def read_config():
     base_config = {
         "language": "pt-br",
         "urls": [],
+        "urls_disabled": [],
         "load_all_instances": True,
         "show_guild_details": True,
         "show_listen_button": True,
