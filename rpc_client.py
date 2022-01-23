@@ -12,6 +12,7 @@ import websockets
 import tornado.web
 from discoIPC.ipc import DiscordIPC
 from config_loader import read_config
+from langs import langs
 from PySimpleGUI import PySimpleGUI as sg
 
 config = read_config()
