@@ -13,6 +13,7 @@ def read_config():
         "playlist_refs": True,
         "show_thumbnail": True,
         "bot_invite": True,
+        "app_port": 85888,
         "assets": {
             "loop":"https://cdn.discordapp.com/attachments/554468640942981147/925586275950534686/loop.gif",
             "loop_queue": "https://media.discordapp.net/attachments/554468640942981147/925570605506514985/loading-icon-animated-gif-3.gif",

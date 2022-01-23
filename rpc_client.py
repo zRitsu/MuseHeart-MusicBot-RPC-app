@@ -3,14 +3,30 @@ import json
 import datetime
 import os
 import pprint
+import sys
 import time
 import traceback
 from threading import Thread
 from main_window import RPCGui
 import websockets
+import tornado.web
 from discoIPC.ipc import DiscordIPC
 from config_loader import read_config
-from langs import langs
+from PySimpleGUI import PySimpleGUI as sg
+
+config = read_config()
+
+class MainHandler(tornado.web.RequestHandler):
+    def get(self):
+        self.write("O app de rich_presence está em execução!")
+
+a = tornado.web.Application([(r'/', MainHandler)])
+
+try:
+    a.listen(config['app_port'])
+except:
+    sg.popup_ok(F"A porta {config['app_port']} está em uso!\nO app já está em execução?")
+    sys.exit(0)
 
 
 class MyDiscordIPC(DiscordIPC):
@@ -111,7 +127,7 @@ class RpcClient:
         self.last_data = {}
         self.tasks = []
         self.main_task = None
-        self.config = read_config()
+        self.config = config
         self.langs = langs
 
         if os.path.isdir("./langs"):
