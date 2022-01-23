@@ -226,7 +226,7 @@ class RPCGui:
                     if not url.startswith(("ws://", "wss:/")):
                         sg.popup_ok(f"Você não inseriu um link válido!\n\nExemplo: ws://aaa.bbb.com:80/ws")
 
-                    elif url in self.window['url_list'].Values or self.window['url_list_disabled'].Values:
+                    elif url in self.window['url_list'].Values or url in self.window['url_list_disabled'].Values:
                         sg.popup_ok(f"O link já está na lista!")
 
                     else:
