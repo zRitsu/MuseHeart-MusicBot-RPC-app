@@ -6,11 +6,11 @@ import pprint
 import time
 import traceback
 from threading import Thread
-
 from main_window import RPCGui
 import websockets
 from discoIPC.ipc import DiscordIPC
 from config_loader import read_config
+from langs import langs
 
 
 class MyDiscordIPC(DiscordIPC):
@@ -112,13 +112,21 @@ class RpcClient:
         self.tasks = []
         self.main_task = None
         self.config = read_config()
-        self.langs = {}
+        self.langs = langs
 
-        for f in os.listdir("./langs"):
-            if not f.endswith(".json"):
-                continue
+        if os.path.isdir("./langs"):
 
-            self.langs.update({f[:-5]: self.load_json(f"./langs/{f}")})
+            for f in os.listdir("./langs"):
+
+                if not f.endswith(".json"):
+                    continue
+
+                lang_data = self.load_json(f"./langs/{f}")
+
+                if not (lang:=f[:-5]) in self.langs:
+                    self.langs.update({lang: lang_data})
+                else:
+                    self.langs[lang].update(lang_data)
 
         self.users_rpc = {
             # user -> {bot: presence}
