@@ -314,7 +314,7 @@ class RpcClient:
 
         if info and track:
 
-            if self.config["show_thumbnail"]:
+            if self.config["show_thumbnail"] and track["thumb"]:
                 payload["assets"]["large_image"] = track["thumb"].replace("mqdefault", "default")
 
             if self.config["show_guild_details"]:
