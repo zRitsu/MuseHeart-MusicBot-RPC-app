@@ -218,7 +218,7 @@ class RPCGui:
 
                 while True:
 
-                    url = sg.PopupGetText("Adicione o link do RPC.")
+                    url = sg.PopupGetText("Adicione o link do RPC.", default_text=self.window.TKroot.clipboard_get())
 
                     if url is None:
                         break
