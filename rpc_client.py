@@ -422,7 +422,7 @@ class RpcClient:
                 elif playlist_name:
                     state += f'{self.get_lang("playlist")}: {playlist_name}'
 
-            if album_url:
+            if album_url and len(buttons) < 2:
 
                 if (album_size := len(album_name)) > 22:
                     state += f' | {self.get_lang("album")}: {album_name}'
