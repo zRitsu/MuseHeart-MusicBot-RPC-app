@@ -1,3 +1,5 @@
+# Nota: VocÊ pode criar um arquivo na pasta langs com o nome (ex: pt-br.json) para adicionar novas traduções ou para alterar uma tradução existente.
+
 langs = {
     "en-us": {
         "server": "Server",
@@ -6,7 +8,7 @@ langs = {
         "stream": "Live",
         "loop_text": "Looping",
         "loop_queue": "Loop: Queue",
-        "loop_remaining": "Remaining track loops",
+        "loop_remaining": "track loops",
         "paused": "Paused",
         "listen": "Listen/Watch",
         "author": "By",
@@ -14,7 +16,8 @@ langs = {
         "view_playlist": "View Playlist",
         "album": "Album",
         "view_album": "View Album",
-        "idle": ["Idling...", "Waiting for new songs..."],
+        # "idle": ["Idling...", "Waiting for new songs..."],
+        "idle": ["Idling...", "   "],
         "invite": "Invite"
     },
     "pt-br": {

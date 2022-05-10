@@ -118,8 +118,3 @@ config.json
 
 # test files
 rpc_test.py
-
-#build files
-build.py
-icon.ico
-build.bat
