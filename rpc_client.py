@@ -402,8 +402,11 @@ class RpcClient:
                 if playlist_name and playlist_url:
 
                     if 'youtube.com' in playlist_url:
-                        playlist_url = "https://www.youtube.com/playlist?list=" + \
-                                       (playlist_url.split('?list=' if '?list=' in playlist_url else '&list='))[1]
+                        try:
+                            playlist_url = "https://www.youtube.com/playlist?list=" + \
+                                           (playlist_url.split('?list=' if '?list=' in playlist_url else '&list='))[1]
+                        except IndexError:
+                            pass
 
                     if (playlist_size := len(playlist_name)) > 25:
                         state += f' | {self.get_lang("playlist")}: {playlist_name}'
