@@ -549,7 +549,7 @@ class RpcClient:
                 async with self.session.ws_connect(uri, heartbeat=self.config["heartbeat"]) as ws:
 
                     try:
-                        self.bots_socket[uri].clear()
+                        self.users_socket[uri].clear()
                     except:
                         pass
 
@@ -625,7 +625,9 @@ class RpcClient:
 
                                 self.process_data(u_id, bot_id, data)
 
-                        elif msg.type == aiohttp.WSMsgType.CLOSED:
+                        elif msg.type in (aiohttp.WSMsgType.CLOSED,
+                                          aiohttp.WSMsgType.CLOSING,
+                                          aiohttp.WSMsgType.CLOSE):
 
                             self.gui.update_log(f"Conexão finalizada com o servidor: {uri}")
                             return
@@ -646,6 +648,13 @@ class RpcClient:
                                 f"Unknow message type: {msg.type}",
                                 log_type="warning"
                             )
+
+                    self.gui.update_log(
+                        f"Desconectado: {uri} | Nova tentativa de conexão em 7 segundos...",
+                        log_type="warning"
+                    )
+                    await self.clear_users_presences(uri)
+                    await asyncio.sleep(7)
 
             except (aiohttp.WSServerHandshakeError, aiohttp.ClientConnectorError):
 
