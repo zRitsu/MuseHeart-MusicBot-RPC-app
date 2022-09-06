@@ -654,7 +654,6 @@ class RpcClient:
                     log_type="warning"
                 )
                 await asyncio.sleep(600)
-                await ws.close()
 
             except Exception as e:
 
@@ -662,7 +661,6 @@ class RpcClient:
                 self.gui.update_log(f"Erro na conexão: {uri} | {repr(e)}", tooltip=True, log_type="error")
                 await self.clear_users_presences(uri)
                 await asyncio.sleep(60)
-                await ws.close()
 
     async def create_session(self):
 
