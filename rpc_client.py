@@ -650,11 +650,12 @@ class RpcClient:
                             )
 
                     self.gui.update_log(
-                        f"Desconectado: {uri} | Nova tentativa de conexão em 7 segundos...",
+                        f"Desconectado: {uri} | Nova tentativa de conexão em "
+                        f"{self.config['reconnect_timeout']} segundos...",
                         log_type="warning"
                     )
                     await self.clear_users_presences(uri)
-                    await asyncio.sleep(7)
+                    await asyncio.sleep(self.config['reconnect_timeout'])
 
             except (aiohttp.WSServerHandshakeError, aiohttp.ClientConnectorError):
 

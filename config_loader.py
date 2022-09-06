@@ -17,6 +17,7 @@ def read_config():
         "app_port": 85888,
         "dummy_app_id": 921606662467498045,
         "heartbeat": 30,
+        "reconnect_timeout": 7,
         "assets": {
             "loop":"https://cdn.discordapp.com/attachments/554468640942981147/925586275950534686/loop.gif",
             "loop_queue": "https://media.discordapp.net/attachments/554468640942981147/925570605506514985/loading-icon-animated-gif-3.gif",
@@ -35,5 +36,8 @@ def read_config():
     else:
         with open("./config.json") as f:
             base_config.update(json.load(f))
+
+    base_config["reconnect_timeout"] = int(base_config["reconnect_timeout"])
+    base_config["heartbeat"] = int(base_config["heartbeat"])
 
     return base_config
