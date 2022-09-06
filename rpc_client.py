@@ -238,7 +238,10 @@ class RpcClient:
     def exit(self):
         for t in self.tasks:
             loop.call_soon_threadsafe(t.cancel)
-        loop.call_soon_threadsafe(self.main_task.cancel)
+        try:
+            loop.call_soon_threadsafe(self.main_task.cancel)
+        except AttributeError:
+            pass
 
     def process_data(self, user_id: int, bot_id: int, data: dict, url: str = "", refresh_timestamp=True):
 
