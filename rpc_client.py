@@ -642,7 +642,10 @@ class RpcClient:
                             backoff *= 1.3
 
                         else:
-                            print(f"Unknow message type: {msg.type}")
+                            self.gui.update_log(
+                                f"Unknow message type: {msg.type}",
+                                log_type="warning"
+                            )
 
             except (aiohttp.WSServerHandshakeError, aiohttp.ClientConnectorError):
 
