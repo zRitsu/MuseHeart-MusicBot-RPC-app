@@ -234,7 +234,7 @@ class RPCGui:
                         self.update_urls()
                         break
 
-            elif event ==  "url_list":
+            elif event == "url_list":
 
                 if not values["url_list"]:
                     continue
@@ -320,6 +320,10 @@ class RPCGui:
             elif event.startswith("asset_"):
                 self.window["save_changes"].update(visible=True)
 
+            elif event == "load_all_instances":
+                self.config[event] = values[event]
+                self.update_data(process_rpc=False)
+
             elif event in self.config:
                 self.config[event] = values[event]
                 self.update_data()
@@ -334,12 +338,10 @@ class RPCGui:
             pass
         sys.exit(0)
 
-
     def update_urls(self):
         self.window['url_list'].update(values=self.config["urls"])
         self.window['url_list_disabled'].update(values=self.config["urls_disabled"])
         self.update_data(process_rpc=False)
-
 
     def update_data(self, process_rpc=True):
 

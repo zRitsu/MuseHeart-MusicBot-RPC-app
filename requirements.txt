@@ -1,4 +1,4 @@
-websockets
+aiohttp
 git+https://github.com/zRitsu/discoIPC.git
 PySimpleGUI
 psgtray

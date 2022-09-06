@@ -7,8 +7,9 @@ import sys
 import time
 import traceback
 from threading import Thread
+from typing import Optional
+import aiohttp
 from main_window import RPCGui
-import websockets
 import tornado.web
 from discoIPC.ipc import DiscordIPC
 from config_loader import read_config
@@ -17,9 +18,11 @@ from PySimpleGUI import PySimpleGUI as sg
 
 config = read_config()
 
+
 class MainHandler(tornado.web.RequestHandler):
     def get(self):
         self.write("O app de rich_presence está em execução!")
+
 
 a = tornado.web.Application([(r'/', MainHandler)])
 
@@ -78,6 +81,7 @@ class IPCError(Exception):
     def __repr__(self):
         return self.error
 
+
 user_clients = {}
 
 replaces = [
@@ -120,6 +124,7 @@ _t = Thread(target=loop.run_forever)
 _t.daemon = True
 _t.start()
 
+
 class RpcClient:
 
     def __init__(self):
@@ -128,6 +133,7 @@ class RpcClient:
         self.main_task = None
         self.config = config
         self.langs = langs
+        self.session: Optional[aiohttp.ClientSession] = None
 
         if os.path.isdir("./langs"):
 
@@ -138,7 +144,7 @@ class RpcClient:
 
                 lang_data = self.load_json(f"./langs/{f}")
 
-                if not (lang:=f[:-5]) in self.langs:
+                if not (lang := f[:-5]) in self.langs:
                     self.langs[lang] = lang_data
                 else:
                     self.langs[lang].update(lang_data)
@@ -157,19 +163,15 @@ class RpcClient:
 
         self.gui = RPCGui(self)
 
-
     def load_json(self, json_file: str):
-
 
         with open(json_file, encoding="utf-8") as f:
             return json.load(f)
-
 
     def save_json(self, json_file: str, data: dict):
 
         with open(json_file, "w") as f:
             f.write(json.dumps(data, indent=4))
-
 
     def get_app_instances(self):
 
@@ -180,7 +182,7 @@ class RpcClient:
                 rpc.connect()
                 time.sleep(0.5)
                 rpc.disconnect()
-            except:
+            except Exception:
                 continue
 
             user_id_ = rpc.data['data']['user']['id']
@@ -205,7 +207,6 @@ class RpcClient:
 
         self.users_rpc.clear()
         user_clients.clear()
-
 
     def get_bot_rpc(self, bot_id: int, pipe: int) -> MyDiscordIPC:
 
@@ -237,7 +238,7 @@ class RpcClient:
     def exit(self):
         for t in self.tasks:
             loop.call_soon_threadsafe(t.cancel)
-
+        loop.call_soon_threadsafe(self.main_task.cancel)
 
     def process_data(self, user_id: int, bot_id: int, data: dict, url: str = "", refresh_timestamp=True):
 
@@ -274,7 +275,6 @@ class RpcClient:
 
         else:
             self.gui.update_log(f"unknow op: {data}", tooltip=True, log_type="warning")
-
 
     def update(self, user_id: int, bot_id: int, data: dict, refresh_timestamp=True):
 
@@ -318,8 +318,10 @@ class RpcClient:
                 payload["assets"]["large_image"] = track["thumb"].replace("mqdefault", "default")
 
             if self.config["show_guild_details"]:
-                payload['assets']['large_text'] = self.get_lang("server") + f': {info["guild"]["name"]} | ' + self.get_lang(
-                "channel") + f': #{info["channel"]["name"]} | ' + self.get_lang("listeners") + f': {info["members"]}'
+                payload['assets']['large_text'] = self.get_lang(
+                    "server") + f': {info["guild"]["name"]} | ' + self.get_lang(
+                    "channel") + f': #{info["channel"]["name"]} | ' + self.get_lang(
+                    "listeners") + f': {info["members"]}'
             payload['details'] = track["title"]
 
             if track["stream"]:
@@ -339,7 +341,8 @@ class RpcClient:
                         payload['timestamps']['start'] = int(startTime.timestamp())
                     else:
                         payload['timestamps']['end'] = self.users_rpc[user_id][bot_id].last_data['timestamps']['end']
-                        payload['timestamps']['start'] = self.users_rpc[user_id][bot_id].last_data['timestamps']['start']
+                        payload['timestamps']['start'] = self.users_rpc[user_id][bot_id].last_data['timestamps'][
+                            'start']
 
                     player_loop = track.get('loop')
 
@@ -410,7 +413,8 @@ class RpcClient:
 
                     if (playlist_size := len(playlist_name)) > 25:
                         state += f' | {self.get_lang("playlist")}: {playlist_name}'
-                        buttons.append({"label": self.get_lang("view_playlist"), "url": playlist_url.replace("www.", "")})
+                        buttons.append(
+                            {"label": self.get_lang("view_playlist"), "url": playlist_url.replace("www.", "")})
 
                     else:
 
@@ -443,7 +447,7 @@ class RpcClient:
 
             payload['state'] = state
 
-            #payload["type"] = 3
+            # payload["type"] = 3
 
             if buttons:
                 payload["buttons"] = buttons
@@ -541,7 +545,8 @@ class RpcClient:
         while True:
 
             try:
-                async with websockets.connect(uri) as ws:
+
+                async with self.session.ws_connect(uri, heartbeat=self.config["heartbeat"]) as ws:
 
                     try:
                         self.bots_socket[uri].clear()
@@ -558,93 +563,118 @@ class RpcClient:
 
                     self.gui.update_log(f"Websocket conectado: {uri}", tooltip=True)
 
-                    await ws.send(json.dumps({"op": "rpc_update", "user_ids": list(user_clients), "version": 2.0}))
+                    await ws.send_str(json.dumps({"op": "rpc_update", "user_ids": list(user_clients), "version": 2.0}))
 
                     async for msg in ws:
-                        try:
-                            data = json.loads(msg)
-                        except Exception:
-                            traceback.print_exc()
-                            continue
 
-                        try:
-                            if not data['op']:
+                        if msg.type == aiohttp.WSMsgType.TEXT:
+
+                            try:
+                                data = json.loads(msg.data)
+                            except Exception:
+                                traceback.print_exc()
                                 continue
-                        except:
-                            continue
 
-                        bot_id = data.pop("bot_id", None)
-                        bot_name = data.pop("bot_name", None)
+                            try:
+                                if not data['op']:
+                                    continue
+                            except:
+                                continue
 
-                        self.bots_socket[uri].add(bot_id)
+                            bot_id = data.pop("bot_id", None)
+                            bot_name = data.pop("bot_name", None)
 
-                        users_ws = data.pop("users", None)
+                            if bot_id:
+                                try:
+                                    self.bots_socket[uri].add(bot_id)
+                                except TypeError:
+                                    for i in bot_id:
+                                        self.bots_socket[uri].add(i)
 
-                        if not users_ws:
-                            continue
+                            users_ws = data.pop("users", None)
+
+                            if not users_ws:
+                                continue
+
+                            else:
+                                users_ws = [u for u in users_ws if u in user_clients]
+
+                            try:
+                                if not data["info"].get("members"):
+                                    data["info"]["members"] = len(users_ws)
+                            except KeyError:
+                                pass
+
+                            for u_id in users_ws:
+
+                                self.users_socket[uri].add(u_id)
+
+                                try:
+                                    user = user_clients[u_id]["user"]
+                                except KeyError:
+                                    continue
+
+                                self.gui.update_log(f"op: {data['op']} | {user} {u_id} | "
+                                                    f"bot: {(bot_name + ' ') if bot_name else ''}[{bot_id}]",
+                                                    log_type="info")
+
+                                try:
+                                    self.last_data[u_id][bot_id] = data
+                                except KeyError:
+                                    self.last_data[u_id] = {bot_id: data}
+
+                                self.process_data(u_id, bot_id, data)
+
+                        elif msg.type == aiohttp.WSMsgType.CLOSED:
+
+                            self.gui.update_log(f"Conexão finalizada com o servidor: {uri}")
+                            return
+
+                        elif msg.type == aiohttp.WSMsgType.ERROR:
+
+                            await self.clear_users_presences(uri)
+
+                            self.gui.update_log(
+                                f"Conexão perdida com o servidor: {uri} | Reconectando em {backoff} seg. {repr(ws.exception())}",
+                                tooltip=True, log_type="warning")
+
+                            await asyncio.sleep(backoff * 10)
+                            backoff *= 1.3
 
                         else:
-                            users_ws = [u for u in users_ws if u in user_clients]
+                            print(f"Unknow message type: {msg.type}")
 
-                        try:
-                            if not data["info"].get("members"):
-                                data["info"]["members"] = len(users_ws)
-                        except KeyError:
-                            pass
+            except (aiohttp.WSServerHandshakeError, aiohttp.ClientConnectorError):
 
-                        for u_id in users_ws:
-
-                            self.users_socket[uri].add(u_id)
-
-                            try:
-                                user = user_clients[u_id]["user"]
-                            except KeyError:
-                                continue
-
-                            self.gui.update_log(f"op: {data['op']} | {user} {u_id} | "
-                                                f"bot: {(bot_name + ' ') if bot_name else ''}[{bot_id}]",
-                                                log_type="info")
-
-                            try:
-                                self.last_data[u_id][bot_id] = data
-                            except KeyError:
-                                self.last_data[u_id] = {bot_id: data}
-
-                            self.process_data(u_id, bot_id, data)
-
-            except (websockets.ConnectionClosedError, ConnectionResetError, websockets.InvalidStatusCode) as e:
-
-                await self.clear_users_presences(uri)
-
-                try:
-                    if e.code == 1005:
-                        self.gui.update_log(f"Conexão finalizada com o servidor: {uri}")
-                        return
-                except AttributeError:
-                    pass
-
-                self.gui.update_log(f"Conexão perdida com o servidor: {uri} | Reconectando em {backoff} seg. {repr(e)}",
-                                    tooltip=True, log_type="warning")
-
-                await asyncio.sleep(backoff*10)
-                backoff *= 1.3
-            except ConnectionRefusedError:
-                self.gui.update_log(f"Servidor indisponível: {uri} | Reconectando em 10 minutos.", log_type="warning")
+                self.gui.update_log(
+                    f"Servidor indisponível: {uri} | Nova tentativa de conexão em 10 minutos.",
+                    log_type="warning"
+                )
                 await asyncio.sleep(600)
+                await ws.close()
+
             except Exception as e:
+
                 traceback.print_exc()
                 self.gui.update_log(f"Erro na conexão: {uri} | {repr(e)}", tooltip=True, log_type="error")
                 await self.clear_users_presences(uri)
                 await asyncio.sleep(60)
+                await ws.close()
 
+    async def create_session(self):
+
+        if not self.session:
+            self.session = aiohttp.ClientSession()
 
     async def handler(self):
+
+        await self.create_session()
+
         self.tasks = [loop.create_task(self.handle_socket(uri)) for uri in list(set(self.config["urls"]))]
         await asyncio.wait(self.tasks)
 
-
     def start_ws(self):
-        asyncio.run_coroutine_threadsafe(self.handler(), loop)
+        self.main_task = asyncio.run_coroutine_threadsafe(self.handler(), loop)
 
 
 if __name__ == "__main__":
