@@ -318,6 +318,7 @@ class RPCGui:
                 self.update_data()
 
             elif event.startswith("asset_"):
+                self.config["assets"][event[6:]] = values[event]
                 self.window["save_changes"].update(visible=True)
 
             elif event == "load_all_instances":

@@ -19,8 +19,8 @@ def read_config():
         "heartbeat": 30,
         "reconnect_timeout": 7,
         "assets": {
-            "loop":"https://cdn.discordapp.com/attachments/554468640942981147/925586275950534686/loop.gif",
-            "loop_queue": "https://media.discordapp.net/attachments/554468640942981147/925570605506514985/loading-icon-animated-gif-3.gif",
+            "loop":"https://cdn.discordapp.com/emojis/912965656624889916.gif",
+            "loop_queue": "https://i.ibb.co/5Mj4HjT/loop-track.gif",
             "pause": "https://i.ibb.co/mDBMnH8/pause.png",
             "soundcloud": "https://i.ibb.co/CV6NB6w/soundcloud.png",
             "spotify": "https://i.ibb.co/3SWMXj8/spotify.png",
@@ -29,6 +29,9 @@ def read_config():
         }
     }
 
+    base_config["reconnect_timeout"] = int(base_config["reconnect_timeout"])
+    base_config["heartbeat"] = int(base_config["heartbeat"])
+
     if not os.path.isfile("./config.json"):
         with open("./config.json", "w") as f:
             f.write(json.dumps(base_config, indent=4))
@@ -36,8 +39,5 @@ def read_config():
     else:
         with open("./config.json") as f:
             base_config.update(json.load(f))
-
-    base_config["reconnect_timeout"] = int(base_config["reconnect_timeout"])
-    base_config["heartbeat"] = int(base_config["heartbeat"])
 
     return base_config
