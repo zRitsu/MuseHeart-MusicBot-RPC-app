@@ -11,7 +11,7 @@ setup(
     version = "2.0",
     description = "Rich presence para bots relacionado a minha repo: zRitsu/disnake-LL-music-bot",
         options = {"build_exe": {
-        'packages': ["os", "websockets", "pystray._win32"],
+        'packages': ["os", "pystray._win32"],
         'include_files': [],
         'include_msvcr': True,
     }},
