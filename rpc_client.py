@@ -587,39 +587,28 @@ class RpcClient:
                                     for i in bot_id:
                                         self.bots_socket[uri].add(i)
 
-                            users_ws = data.pop("users", None)
+                            user_ws = data.pop("user", None)
 
-                            if not users_ws:
+                            if not user_ws:
                                 continue
 
-                            else:
-                                users_ws = [u for u in users_ws if u in user_clients]
+                            self.users_socket[uri].add(user_ws)
 
                             try:
-                                if not data["info"].get("members"):
-                                    data["info"]["members"] = len(users_ws)
+                                user = user_clients[user_ws]["user"]
                             except KeyError:
-                                pass
+                                continue
 
-                            for u_id in users_ws:
+                            self.gui.update_log(f"op: {data['op']} | {user} {user_ws} | "
+                                                f"bot: {(bot_name + ' ') if bot_name else ''}[{bot_id}]",
+                                                log_type="info")
 
-                                self.users_socket[uri].add(u_id)
+                            try:
+                                self.last_data[user_ws][bot_id] = data
+                            except KeyError:
+                                self.last_data[user_ws] = {bot_id: data}
 
-                                try:
-                                    user = user_clients[u_id]["user"]
-                                except KeyError:
-                                    continue
-
-                                self.gui.update_log(f"op: {data['op']} | {user} {u_id} | "
-                                                    f"bot: {(bot_name + ' ') if bot_name else ''}[{bot_id}]",
-                                                    log_type="info")
-
-                                try:
-                                    self.last_data[u_id][bot_id] = data
-                                except KeyError:
-                                    self.last_data[u_id] = {bot_id: data}
-
-                                self.process_data(u_id, bot_id, data)
+                            self.process_data(user_ws, bot_id, data)
 
                         elif msg.type in (aiohttp.WSMsgType.CLOSED,
                                           aiohttp.WSMsgType.CLOSING,
