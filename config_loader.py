@@ -22,10 +22,13 @@ def read_config():
             "loop":"https://cdn.discordapp.com/emojis/912965656624889916.gif",
             "loop_queue": "https://i.ibb.co/5Mj4HjT/loop-track.gif",
             "pause": "https://i.ibb.co/mDBMnH8/pause.png",
-            "soundcloud": "https://i.ibb.co/CV6NB6w/soundcloud.png",
-            "spotify": "https://i.ibb.co/3SWMXj8/spotify.png",
             "stream": "https://i.ibb.co/Qf9BSQb/stream.png",
-            "yt": "https://i.ibb.co/LvX7dQL/yt.png"
+            "sources": {
+                "deezer": "https://i.ibb.co/zxpBbp8/deezer.png",
+                "soundcloud": "https://i.ibb.co/CV6NB6w/soundcloud.png",
+                "spotify": "https://i.ibb.co/3SWMXj8/spotify.png",
+                "youtube": "https://i.ibb.co/LvX7dQL/yt.png"
+            }
         }
     }
 

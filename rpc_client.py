@@ -100,15 +100,6 @@ replaces = [
 ]
 
 
-def get_thumb(url):
-    if "youtube.com" in url:
-        return ["yt", "Youtube"]
-    if "spotify.com" in url:
-        return ["spotify", "Spotify"]
-    if "soundcloud.com" in url:
-        return ["soundcloud", "Soundcloud"]
-
-
 def fix_characters(text: str, limit=30):
     for r in replaces:
         text = text.replace(r[0], r[1])
@@ -369,12 +360,11 @@ class RpcClient:
                         payload['assets']['small_text'] = loop_text
 
                     else:
-
-                        source_ico = get_thumb(track.get("url"))
-
-                        if source_ico:
-                            payload['assets']['small_image'] = self.config["assets"][source_ico[0]]
-                            payload['assets']['small_text'] = source_ico[1]
+                        try:
+                            payload['assets']['small_image'] = self.config["assets"][track["source"]]
+                        except KeyError:
+                            pass
+                        payload['assets']['small_text'] = track["source"]
 
                 else:
                     payload['timestamps']['start'] = time.time()
@@ -443,7 +433,7 @@ class RpcClient:
 
             payload['state'] = state
 
-            # payload["type"] = 3
+            payload["type"] = 3
 
             if buttons:
                 payload["buttons"] = buttons
