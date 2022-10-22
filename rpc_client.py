@@ -361,7 +361,7 @@ class RpcClient:
 
                     else:
                         try:
-                            payload['assets']['small_image'] = self.config["assets"][track["source"]]
+                            payload['assets']['small_image'] = self.config["assets"]["sources"][track["source"]]
                         except KeyError:
                             pass
                         payload['assets']['small_text'] = track["source"]
