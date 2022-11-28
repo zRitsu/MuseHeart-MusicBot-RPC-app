@@ -369,9 +369,6 @@ class RpcClient:
                 else:
                     payload['timestamps']['start'] = time.time()
 
-                    payload['assets']['small_image'] = self.config["assets"]["stream"]
-                    payload['assets']['small_text'] = "Stream"
-
             else:
 
                 payload['assets']['small_image'] = self.config["assets"]["pause"]
