@@ -16,9 +16,9 @@ langs = {
         "view_playlist": "View Playlist",
         "album": "Album",
         "view_album": "View Album",
-        # "idle": ["Idling...", "Waiting for new songs..."],
-        "idle": ["Idling...", "   "],
-        "invite": "Invite"
+        "idle": ["Idling...", "Waiting for new songs..."],
+        "invite": "Invite",
+        "queue": "Queue: {queue}",
     },
     "pt-br": {
         "server": "Servidor",
@@ -36,6 +36,7 @@ langs = {
         "album": "Álbum",
         "view_album": "Ver Álbum",
         "idle": ["Aguardando por", "novas músicas..."],
-        "invite": "Me adicione no seu server."
+        "invite": "Me adicione no seu server.",
+        "queue": "Na fila: {queue}",
     }
 }

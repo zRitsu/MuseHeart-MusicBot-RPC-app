@@ -335,8 +335,7 @@ class RpcClient:
                         payload['timestamps']['start'] = int(startTime.timestamp())
                     else:
                         payload['timestamps']['end'] = self.users_rpc[user_id][bot_id].last_data['timestamps']['end']
-                        payload['timestamps']['start'] = self.users_rpc[user_id][bot_id].last_data['timestamps'][
-                            'start']
+                        payload['timestamps']['start'] = self.users_rpc[user_id][bot_id].last_data['timestamps']['start']
 
                     player_loop = track.get('loop')
 
@@ -412,18 +411,30 @@ class RpcClient:
                 elif playlist_name:
                     state += f'{self.get_lang("playlist")}: {playlist_name}'
 
-            if album_url and len(buttons) < 2:
+            if album_url:
 
-                if (album_size := len(album_name)) > 22:
+                if len(buttons) < 2:
+
+                    if (album_size := len(album_name)) > 22:
+                        state += f' | {self.get_lang("album")}: {album_name}'
+                        buttons.append({"label": self.get_lang("view_album"), "url": album_url.replace("www.", "")})
+
+                    else:
+
+                        if album_size < 17:
+                            album_name = f"{self.get_lang('album')}: {album_name}"
+
+                        buttons.append({"label": album_name, "url": album_url})
+
+                elif album_name != track["title"]:
                     state += f' | {self.get_lang("album")}: {album_name}'
-                    buttons.append({"label": self.get_lang("view_album"), "url": album_url.replace("www.", "")})
 
-                else:
 
-                    if album_size < 17:
-                        album_name = f"{self.get_lang('album')}: {album_name}"
-
-                    buttons.append({"label": album_name, "url": album_url})
+            try:
+                if track["queue"]:
+                    state += f' | {self.get_lang("queue").replace("{queue}", str(track["queue"]))}'
+            except KeyError:
+                pass
 
             if not state:
                 state = "   "
