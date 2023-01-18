@@ -64,6 +64,10 @@ class RPCGui:
                                  default=self.config['bot_invite'], key='bot_invite', enable_events=True)],
                     [sg.Checkbox('Carregar presence em todas as instâncias do discord (Beta).',
                                  default=self.config['load_all_instances'], key='load_all_instances', enable_events=True)],
+                    [sg.Checkbox('Usar APP_ID Customizado: ',
+                                 default=self.config['override_appid'], key='override_appid',
+                                 enable_events=True),
+                     sg.InputText(default_text=self.config["dummy_app_id"], key="dummy_app_id", enable_events=True)],
                 ], expand_x=True),
             ]
         ]
@@ -300,7 +304,7 @@ class RPCGui:
                 self.rpc_started = True
                 self.update_buttons(
                     enable=["stop_presence"],
-                    disable=["start_presence", "load_all_instances"]
+                    disable=["start_presence", "load_all_instances", "dummy_app_id", "override_appid"]
                 )
 
             elif event == "stop_presence":
@@ -310,7 +314,7 @@ class RPCGui:
                 self.update_log("RPC Finalizado!\n-----", tooltip=True)
                 self.update_buttons(
                     disable=["stop_presence"],
-                    enable=["start_presence", "load_all_instances"]
+                    enable=["start_presence", "load_all_instances", "dummy_app_id", "override_appid"]
                 )
                 self.rpc_started = False
 

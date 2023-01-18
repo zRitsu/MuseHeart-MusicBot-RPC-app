@@ -171,8 +171,9 @@ class RpcClient:
             try:
                 rpc = MyDiscordIPC(str(config["dummy_app_id"]), pipe=i)
                 rpc.connect()
-                time.sleep(0.5)
-                rpc.disconnect()
+                if not config["override_appid"]:
+                    time.sleep(0.5)
+                    rpc.disconnect()
             except Exception:
                 continue
 
@@ -575,7 +576,11 @@ class RpcClient:
                             except:
                                 continue
 
-                            bot_id = data.pop("bot_id", None)
+                            if self.config["override_appid"]:
+                                bot_id = int(self.config["dummy_app_id"])
+                                data.pop("bot_id", None)
+                            else:
+                                bot_id = data.pop("bot_id", None)
                             bot_name = data.pop("bot_name", None)
 
                             if bot_id:

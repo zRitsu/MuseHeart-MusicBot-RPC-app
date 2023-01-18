@@ -16,6 +16,7 @@ def read_config():
         "bot_invite": True,
         "app_port": 85888,
         "dummy_app_id": 921606662467498045,
+        "override_appid": False,
         "heartbeat": 30,
         "reconnect_timeout": 7,
         "assets": {
