@@ -325,12 +325,11 @@ class RPCGui:
                 self.config["assets"][event[6:]] = values[event]
                 self.window["save_changes"].update(visible=True)
 
-            elif event == "load_all_instances":
+            elif event in ("load_all_instances", "override_appid"):
                 self.config[event] = values[event]
                 self.update_data(process_rpc=False)
 
             elif event in self.config:
-                self.config[event] = values[event]
                 self.update_data()
 
             elif event in self.config["assets"]:

@@ -576,11 +576,11 @@ class RpcClient:
                             except:
                                 continue
 
+                            bot_id = data.pop("bot_id", None)
+
                             if self.config["override_appid"]:
                                 bot_id = int(self.config["dummy_app_id"])
-                                data.pop("bot_id", None)
-                            else:
-                                bot_id = data.pop("bot_id", None)
+
                             bot_name = data.pop("bot_name", None)
 
                             if bot_id:
