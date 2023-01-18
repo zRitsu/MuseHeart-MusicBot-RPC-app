@@ -253,7 +253,7 @@ class RpcClient:
             payload = self.get_idle_data(bot_id, data)
 
             if self.config["override_appid"]:
-                payload["assets"]["large_image"] = "https://i.ibb.co/6XS6qLy/music-img.png"
+                payload["assets"]["large_image"] = self.config["assets"]["idle"]
 
             self.update(user_id, bot_id, payload, refresh_timestamp=refresh_timestamp)
 
