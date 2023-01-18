@@ -24,6 +24,7 @@ def read_config():
             "loop_queue": "https://i.ibb.co/5Mj4HjT/loop-track.gif",
             "pause": "https://i.ibb.co/mDBMnH8/pause.png",
             "stream": "https://i.ibb.co/Qf9BSQb/stream.png",
+            "idle": "https://i.ibb.co/6XS6qLy/music-img.png",
             "sources": {
                 "deezer": "https://i.ibb.co/zxpBbp8/deezer.png",
                 "soundcloud": "https://i.ibb.co/CV6NB6w/soundcloud.png",

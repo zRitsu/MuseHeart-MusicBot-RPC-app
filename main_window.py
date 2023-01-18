@@ -87,6 +87,9 @@ class RPCGui:
                     [sg.Text("Stream/Transmissão:")],
                     [sg.InputText(default_text=self.config["assets"]["stream"], expand_x=True, key="asset_stream",
                                   enable_events=True)],
+                    [sg.Text("Em espera:")],
+                    [sg.InputText(default_text=self.config["assets"]["idle"], expand_x=True, key="asset_idle",
+                                  enable_events=True)],
                 ], expand_x=True)
             ],
         ]
