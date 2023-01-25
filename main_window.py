@@ -333,6 +333,7 @@ class RPCGui:
                 self.update_data(process_rpc=False)
 
             elif event in self.config:
+                self.config[event] = values[event]
                 self.update_data()
 
             elif event in self.config["assets"]:
