@@ -370,7 +370,7 @@ class RpcClient:
                         payload['assets']['small_text'] = track["source"]
 
                 else:
-                    payload['timestamps']['start'] = time.time()
+                    payload['timestamps']['start'] = int(time.time())
 
             else:
 
