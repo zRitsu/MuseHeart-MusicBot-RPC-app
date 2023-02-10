@@ -505,11 +505,14 @@ class RpcClient:
         buttons = []
 
         public = data.pop("public", True)
+        support_server = data.pop("support_server", None)
 
         if public and self.config["bot_invite"]:
             invite = f"https://discord.com/api/oauth2/authorize?client_id={bot_id}&" \
                      f"permissions={data.pop('invite_permissions', 8)}&scope=bot%20applications.commands"
             buttons.append({"label": self.get_lang("invite"), "url": invite})
+            if support_server:
+                buttons.append({"label": self.get_lang("support_server"), "url": support_server})
 
         if buttons:
             payload["buttons"] = buttons

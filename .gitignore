@@ -115,6 +115,7 @@ dmypy.json
 .idea/
 .vscode/
 config.json
+*.code-workspace
 
 # test files
 rpc_test.py
