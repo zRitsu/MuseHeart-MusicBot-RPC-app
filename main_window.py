@@ -57,6 +57,8 @@ class RPCGui:
                                  default=self.config["playlist_refs"], key='playlist_refs', enable_events=True)],
                     [sg.Checkbox('Exibir miniatura da música (quando disponível).',
                                  default=self.config["show_thumbnail"], key='show_thumbnail', enable_events=True)],
+                    [sg.Checkbox('Exibir quantidade de músicas na fila (quando disponível).',
+                                 default=self.config["enable_queue_text"], key='enable_queue_text', enable_events=True)],
                     [sg.Checkbox('Exibir detalhes do canal onde o player está ativo (quantidade de membros, nome do '
                                  'servidor e canal, etc).', default=self.config["show_guild_details"],
                                  key='show_guild_details', enable_events=True)],
@@ -313,7 +315,7 @@ class RPCGui:
             elif event == "stop_presence":
                 self.client.close_app_instances()
                 self.client.exit()
-                time.sleep(2)
+                #time.sleep(2)
                 self.update_log("RPC Finalizado!\n-----", tooltip=True)
                 self.update_buttons(
                     disable=["stop_presence"],

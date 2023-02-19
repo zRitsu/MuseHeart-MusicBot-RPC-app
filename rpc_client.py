@@ -435,7 +435,7 @@ class RpcClient:
 
 
             try:
-                if track["queue"]:
+                if track["queue"] and self.config["enable_queue_text"]:
                     state += f' | {self.get_lang("queue").replace("{queue}", str(track["queue"]))}'
             except KeyError:
                 pass
