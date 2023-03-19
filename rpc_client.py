@@ -323,8 +323,13 @@ class RpcClient:
             payload['details'] = track["title"]
 
             if track["stream"]:
-                payload['assets']['small_image'] = self.config["assets"]["stream"]
-                payload['assets']['small_text'] = self.get_lang("stream")
+
+                if track["source"] == "twitch":
+                    payload['assets']['small_image'] = self.config["assets"]["sources"][track["source"]]
+                    payload['assets']['small_text'] = "Twitch: " + self.get_lang("stream")
+                else:
+                    payload['assets']['small_image'] = self.config["assets"]["stream"]
+                    payload['assets']['small_text'] = self.get_lang("stream")
 
             if not track["paused"]:
 
