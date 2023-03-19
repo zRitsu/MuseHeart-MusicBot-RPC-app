@@ -35,6 +35,7 @@ python3 build.py build
 ws://localhost/ws
 ```
 * Se seu bot tiver hospedado em algum serviço que forneça acesso http (ex: Repl.it, Heroku etc) o link do app será exibido na página renderizada:
+
 ![](https://cdn.discordapp.com/attachments/554468640942981147/1087148423767130112/image.png)
 
 Após adicionar pelo menos um link de websocket no app você pode clicar em "Iniciar Presence".
