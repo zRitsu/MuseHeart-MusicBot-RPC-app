@@ -552,7 +552,7 @@ class RpcClient:
 
             try:
 
-                async with self.session.ws_connect(uri, heartbeat=self.config["heartbeat"]) as ws:
+                async with self.session.ws_connect(uri, heartbeat=self.config["heartbeat"], timeout=120) as ws:
 
                     try:
                         self.users_socket[uri].clear()
