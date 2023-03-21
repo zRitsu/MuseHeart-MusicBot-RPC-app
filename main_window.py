@@ -235,7 +235,7 @@ class RPCGui:
 
             elif event == "btn_paste_token":
 
-                token = self.window.TKroot.clipboard_get()
+                token = self.window.TKroot.clipboard_get().replace(" ", "")
 
                 if len(token) != 50:
                     sg.popup_ok(f"O token colado não possui 50 caracteres:\n"
