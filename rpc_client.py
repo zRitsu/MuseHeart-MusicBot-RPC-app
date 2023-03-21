@@ -569,7 +569,16 @@ class RpcClient:
 
                     self.gui.update_log(f"Websocket conectado: {uri}", tooltip=True)
 
-                    await ws.send_str(json.dumps({"op": "rpc_update", "user_ids": list(user_clients), "version": 2.0}))
+                    await ws.send_str(
+                        json.dumps(
+                            {
+                                "op": "rpc_update",
+                                "user_ids": list(user_clients),
+                                "token": self.config["token"].replace(" ", ""),
+                                "version": 2.1
+                            }
+                        )
+                    )
 
                     async for msg in ws:
 
@@ -621,6 +630,11 @@ class RpcClient:
                                 self.last_data[user_ws][bot_id] = data
                             except KeyError:
                                 self.last_data[user_ws] = {bot_id: data}
+
+                            try:
+                                del data["token"]
+                            except KeyError:
+                                pass
 
                             self.process_data(user_ws, bot_id, data)
 

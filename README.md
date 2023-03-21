@@ -42,6 +42,12 @@ ws://localhost/ws
 
 ![](https://cdn.discordapp.com/attachments/554468640942981147/1087148423767130112/image.png)
 
-Após adicionar pelo menos um link de websocket no app você pode clicar em "Iniciar Presence".
+* Adicione o link do websocket na aba Socket Settings.
+
+* Obtenha o token de acesso através do bot usando o comando `/rich_presence` (ou mencionando o bot em uma mensagem: `@bot richpresence`).
+
+* Adicione o token na aba Socket Settings.
+
+Após configurar esses dois itens, basta clicar em "Iniciar Presence".
 
 ---

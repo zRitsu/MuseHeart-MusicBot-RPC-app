@@ -20,6 +20,7 @@ def read_config():
         "heartbeat": 30,
         "reconnect_timeout": 7,
         "enable_queue_text": True,
+        "token": "",
         "assets": {
             "loop": "https://cdn.discordapp.com/emojis/912965656624889916.gif",
             "loop_queue": "https://i.ibb.co/5Mj4HjT/loop-track.gif",

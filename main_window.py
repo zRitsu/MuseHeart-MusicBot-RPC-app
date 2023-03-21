@@ -99,18 +99,28 @@ class RPCGui:
         tab_urls = [
             [
                 sg.Frame("", [
-                    [sg.Text("Links Ativados:",  size=(39, 1), font=("arial",11), justification="center",
-                             background_color="green2"),
-                     sg.Text("Links Desativados:", size=(39, 1), font=("arial",11), justification="center",
-                             text_color="white", background_color="red")],
-                    [sg.Listbox(values=self.config["urls"], size=(30, 11),expand_x=True, key="url_list",
-                                horizontal_scroll=True, bind_return_key=True),
-                    sg.Listbox(values=self.config["urls_disabled"], size=(30, 11), expand_x=True,
-                                horizontal_scroll=True, key="url_list_disabled", bind_return_key=True)
+                    [
+                        sg.Text('Token de acesso:'),
+                        sg.InputText(default_text=self.config["token"], key="token", size=(73,1), disabled=True),
+                        sg.Button("Colar Token", key="btn_paste_token", enable_events=True)
                     ],
-                    [sg.Button("Adicionar", key="btn_add_url", enable_events=True),
-                     sg.Button("Editar", key="btn_edit_url", enable_events=True),
-                     sg.Button("Remover", key="btn_remove_url", enable_events=True)]
+                    [
+                        sg.Text("Links Ativados:", size=(39, 1), font=("arial", 11), justification="center",
+                                background_color="green2"),
+                        sg.Text("Links Desativados:", size=(39, 1), font=("arial", 11), justification="center",
+                                text_color="white", background_color="red")
+                    ],
+                    [
+                        sg.Listbox(values=self.config["urls"], size=(30, 12), expand_x=True, key="url_list",
+                                   horizontal_scroll=True, bind_return_key=True),
+                        sg.Listbox(values=self.config["urls_disabled"], size=(30, 12), expand_x=True,
+                                   horizontal_scroll=True, key="url_list_disabled", bind_return_key=True)
+                    ],
+                    [
+                        sg.Button("Adicionar", key="btn_add_url", enable_events=True),
+                        sg.Button("Editar", key="btn_edit_url", enable_events=True),
+                        sg.Button("Remover", key="btn_remove_url", enable_events=True)
+                    ]
                 ], expand_x=True)
             ]
         ]
@@ -120,8 +130,8 @@ class RPCGui:
                 sg.TabGroup(
                     [
                         [
-                            sg.Tab('Config', tab_config, element_justification='center'),
-                            sg.Tab('Socket URL\'s', tab_urls, key="sockets_url"),
+                            sg.Tab('Main Settings', tab_config, element_justification='center'),
+                            sg.Tab('Socket Settings', tab_urls, key="sockets_url"),
                             sg.Tab('Assets', tab_assets, element_justification='center')
                         ]
                     ], key="main_tab"
@@ -223,6 +233,19 @@ class RPCGui:
             elif event == "clear_log":
                 self.window[MLINE_KEY].update("Log limpo com sucesso!\n", text_color_for_value='green2')
 
+            elif event == "btn_paste_token":
+
+                token = self.window.TKroot.clipboard_get()
+
+                if len(token) != 50:
+                    sg.popup_ok(f"O token colado não possui 50 caracteres:\n"
+                                f"{' '.join(token.split())[:100]}")
+                    continue
+
+                self.config["token"] = token
+                self.window["token"].update(value=token)
+                self.update_data()
+
             elif event == "btn_add_url":
 
                 while True:
@@ -299,6 +322,13 @@ class RPCGui:
                     sg.popup_ok(f"Você deve adicionar pelo menos um link WS antes de iniciar presence!")
                     self.window["sockets_url"].select()
                     continue
+
+                if not self.config["token"]:
+                    sg.popup_ok(f"Você deve incluir o token de acesso para iniciar presence!\n"
+                                f"Caso não tenha, use o comando /rich_presence no bot.")
+                    self.window["sockets_url"].select()
+                    continue
+
                 self.client.gui = self
                 try:
                     self.client.get_app_instances()
@@ -309,17 +339,16 @@ class RPCGui:
                 self.rpc_started = True
                 self.update_buttons(
                     enable=["stop_presence"],
-                    disable=["start_presence", "load_all_instances", "dummy_app_id", "override_appid"]
+                    disable=["start_presence", "load_all_instances", "dummy_app_id", "override_appid", "btn_paste_token"]
                 )
 
             elif event == "stop_presence":
                 self.client.close_app_instances()
                 self.client.exit()
-                #time.sleep(2)
                 self.update_log("RPC Finalizado!\n-----", tooltip=True)
                 self.update_buttons(
                     disable=["stop_presence"],
-                    enable=["start_presence", "load_all_instances", "dummy_app_id", "override_appid"]
+                    enable=["start_presence", "load_all_instances", "dummy_app_id", "override_appid", "btn_paste_token"]
                 )
                 self.rpc_started = False
 
