@@ -119,6 +119,7 @@ _t.start()
 class RpcClient:
 
     def __init__(self):
+        self.version = 2.3
         self.last_data = {}
         self.tasks = []
         self.main_task = None
@@ -575,7 +576,7 @@ class RpcClient:
                                 "op": "rpc_update",
                                 "user_ids": list(user_clients),
                                 "token": self.config["token"].replace(" ", ""),
-                                "version": 2.1
+                                "version": self.version
                             }
                         )
                     )
@@ -620,6 +621,13 @@ class RpcClient:
                             try:
                                 user = user_clients[user_ws]["user"]
                             except KeyError:
+                                continue
+
+                            if data['op'] == "exception":
+                                self.gui.update_log(f"op: {data['op']} | {user} {user_ws} | "
+                                                    f"bot: {(bot_name + ' ') if bot_name else ''}[{bot_id}] | "
+                                                    f"\nerror: {data.get('message')}",
+                                                    log_type="error")
                                 continue
 
                             self.gui.update_log(f"op: {data['op']} | {user} {user_ws} | "

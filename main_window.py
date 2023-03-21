@@ -15,8 +15,8 @@ MLINE_KEY = '-MLINE-'+sg.WRITE_ONLY_KEY
 class RPCGui:
 
     def __init__(self, client: RpcClient):
-        self.appname = "Discord RPC (Music Bot)"
         self.client = client
+        self.appname = f"Discord RPC (Music Bot) v{self.client.version}"
         self.config = self.client.config
         self.ready = False
 
@@ -235,7 +235,7 @@ class RPCGui:
 
             elif event == "btn_paste_token":
 
-                token = self.window.TKroot.clipboard_get()
+                token = self.window.TKroot.clipboard_get().replace("\n","").replace(" ", "")
 
                 if len(token) != 50:
                     sg.popup_ok(f"O token colado não possui 50 caracteres:\n"
