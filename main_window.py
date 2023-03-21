@@ -235,7 +235,7 @@ class RPCGui:
 
             elif event == "btn_paste_token":
 
-                token = self.window.TKroot.clipboard_get().replace(" ", "")
+                token = self.window.TKroot.clipboard_get()
 
                 if len(token) != 50:
                     sg.popup_ok(f"O token colado não possui 50 caracteres:\n"
@@ -254,6 +254,8 @@ class RPCGui:
 
                     if url is None:
                         break
+
+                    url = url.replace(" ", "")
 
                     if not url.startswith(("ws://", "wss:/")):
                         sg.popup_ok(f"Você não inseriu um link válido!\n\nExemplo: ws://aaa.bbb.com:80/ws")
