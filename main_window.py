@@ -255,7 +255,7 @@ class RPCGui:
                     if url is None:
                         break
 
-                    url = url.replace(" ", "")
+                    url = url.replace(" ", "").replace("\n", "")
 
                     if not url.startswith(("ws://", "wss:/")):
                         sg.popup_ok(f"Você não inseriu um link válido!\n\nExemplo: ws://aaa.bbb.com:80/ws")
