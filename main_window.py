@@ -244,7 +244,7 @@ class RPCGui:
 
                 self.config["token"] = token
                 self.window["token"].update(value=token)
-                self.update_data()
+                self.update_data(process_rpc=False)
 
             elif event == "btn_add_url":
 
