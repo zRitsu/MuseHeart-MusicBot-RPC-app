@@ -119,7 +119,7 @@ _t.start()
 class RpcClient:
 
     def __init__(self):
-        self.version = 2.3
+        self.version = 2.4
         self.last_data = {}
         self.tasks = []
         self.main_task = None
