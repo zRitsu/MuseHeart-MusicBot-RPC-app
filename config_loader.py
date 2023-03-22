@@ -31,7 +31,8 @@ def read_config():
                 "deezer": "https://i.ibb.co/zxpBbp8/deezer.png",
                 "soundcloud": "https://i.ibb.co/CV6NB6w/soundcloud.png",
                 "spotify": "https://i.ibb.co/3SWMXj8/spotify.png",
-                "youtube": "https://i.ibb.co/LvX7dQL/yt.png"
+                "youtube": "https://i.ibb.co/LvX7dQL/yt.png",
+                "twitch": "https://cdn3.iconfinder.com/data/icons/popular-services-brands-vol-2/512/twitch-512.png"
             }
         }
     }
