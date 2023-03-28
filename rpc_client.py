@@ -729,7 +729,7 @@ class RpcClient:
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('-autostart', type=int, help='Iniciar presence automaticamente', default=30)
+    parser.add_argument('-autostart', type=int, help='Iniciar presence automaticamente (tempo mínimo: 15)', default=0)
     args = parser.parse_args()
 
     RpcClient(autostart=args.autostart)
