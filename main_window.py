@@ -249,12 +249,6 @@ class RPCGui:
             self.window["sockets_url"].select()
             return
 
-        if not self.config["token"]:
-            sg.popup_ok(f"Você deve incluir o token de acesso para iniciar presence!\n"
-                        f"Caso não tenha, use o comando /rich_presence no bot.")
-            self.window["sockets_url"].select()
-            return
-
         self.client.gui = self
         try:
             self.client.get_app_instances()
