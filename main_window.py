@@ -16,7 +16,7 @@ MLINE_KEY = '-MLINE-'+sg.WRITE_ONLY_KEY
 
 class RPCGui:
 
-    def __init__(self, client: RpcClient, autostart: int = 15):
+    def __init__(self, client: RpcClient, autostart: int = 0):
         self.client = client
         self.appname = f"Discord RPC (Music Bot) v{self.client.version}"
         self.config = self.client.config
