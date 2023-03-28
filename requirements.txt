@@ -4,3 +4,4 @@ PySimpleGUI
 psgtray
 tornado
 cx-Freeze
+psutil

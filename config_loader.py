@@ -7,8 +7,7 @@ def read_config():
         "language": "pt-br",
         "urls": [],
         "urls_disabled": [],
-        "load_all_instances": True,
-        "show_guild_details": True,
+        "load_all_instances": False,
         "show_listen_button": True,
         "show_playlist_button": True,
         "playlist_refs": True,
@@ -20,6 +19,7 @@ def read_config():
         "heartbeat": 30,
         "reconnect_timeout": 7,
         "enable_queue_text": True,
+        "block_other_users_track": False,
         "token": "",
         "assets": {
             "loop": "https://cdn.discordapp.com/emojis/912965656624889916.gif",

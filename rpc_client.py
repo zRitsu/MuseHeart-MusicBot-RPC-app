@@ -1,3 +1,4 @@
+import argparse
 import asyncio
 import json
 import datetime
@@ -7,7 +8,7 @@ import sys
 import time
 import traceback
 from threading import Thread
-from typing import Optional
+from typing import Optional, Union
 import aiohttp
 from main_window import RPCGui
 import tornado.web
@@ -31,6 +32,21 @@ try:
 except:
     sg.popup_ok(F"A porta {config['app_port']} está em uso!\nO app já está em execução?")
     sys.exit(0)
+
+def time_format(milliseconds: Union[int, float]) -> str:
+    minutes, seconds = divmod(int(milliseconds / 1000), 60)
+    hours, minutes = divmod(minutes, 60)
+    days, hours = divmod(hours, 24)
+
+    strings = f"{minutes:02d}:{seconds:02d}"
+
+    if hours:
+        strings = f"{hours}:{strings}"
+
+    if days:
+        strings = (f"{days} dias" if days > 1 else f"{days} dia") + (f", {strings}" if strings != "00:00" else "")
+
+    return strings
 
 
 class MyDiscordIPC(DiscordIPC):
@@ -84,6 +100,10 @@ class IPCError(Exception):
 
 user_clients = {}
 
+valid_presence_fields = ("state", "details", "assets", "timestamps", "pid", "start", "end", "large_image", "large_text",
+                         "small_image", "small_text", "party_id", "party_size", "join", "spectate", "match", "buttons",
+                         "instance")
+
 replaces = [
     ('&quot;', '"'),
     ('&amp;', '&'),
@@ -118,8 +138,8 @@ _t.start()
 
 class RpcClient:
 
-    def __init__(self):
-        self.version = 2.4
+    def __init__(self, autostart: int = 0):
+        self.version = 2.5
         self.last_data = {}
         self.tasks = []
         self.main_task = None
@@ -153,7 +173,7 @@ class RpcClient:
             # url -> [ids]
         }
 
-        self.gui = RPCGui(self)
+        self.gui = RPCGui(self, autostart=autostart)
 
     def load_json(self, json_file: str):
 
@@ -301,26 +321,22 @@ class RpcClient:
         }
 
         track = data.pop("track", None)
-
-        info = data.pop("info", None)
-
         thumb = data.pop("thumb", None)
+
+        for d in dict(data):
+            if d not in valid_presence_fields:
+                del data[d]
 
         payload.update(data)
 
         if not payload["assets"].get("large_image"):
             payload["assets"]["large_image"] = thumb
 
-        if info and track:
+        if track:
 
             if self.config["show_thumbnail"] and track["thumb"]:
                 payload["assets"]["large_image"] = track["thumb"].replace("mqdefault", "default")
 
-            if self.config["show_guild_details"]:
-                payload['assets']['large_text'] = self.get_lang(
-                    "server") + f': {info["guild"]["name"]} | ' + self.get_lang(
-                    "channel") + f': #{info["channel"]["name"]} | ' + self.get_lang(
-                    "listeners") + f': {info["members"]}'
             payload['details'] = track["title"]
 
             if track["stream"]:
@@ -451,14 +467,17 @@ class RpcClient:
 
             payload['state'] = state
 
-            payload["type"] = 3
+            payload["type"] = 2
 
             if buttons:
                 payload["buttons"] = buttons
 
         try:
 
-            self.users_rpc[user_id][bot_id].update_activity(payload)
+            if self.config["block_other_users_track"] and track and track["requester_id"] != user_id:
+                self.users_rpc[user_id][bot_id].clear()
+            else:
+                self.users_rpc[user_id][bot_id].update_activity(payload)
 
         except IPCError:
 
@@ -499,11 +518,6 @@ class RpcClient:
             "assets": {},
             "details": text_idle[0],
         }
-
-        if self.config["show_guild_details"]:
-            payload["assets"]["large_text"] = self.get_lang("server") + f': {data["info"]["guild"]["name"]} | ' \
-                                              + self.get_lang("channel") + f': #{data["info"]["channel"]["name"]} | ' \
-                                              + self.get_lang("listeners") + f': {data["info"]["members"]}'
 
         if len(text_idle) > 1:
             payload['state'] = text_idle[1]
@@ -575,7 +589,7 @@ class RpcClient:
                             {
                                 "op": "rpc_update",
                                 "user_ids": list(user_clients),
-                                "token": self.config["token"].replace(" ", ""),
+                                "token": self.config["token"].replace(" ", "").replace("\n", ""),
                                 "version": self.version
                             }
                         )
@@ -658,10 +672,10 @@ class RpcClient:
                             await self.clear_users_presences(uri)
 
                             self.gui.update_log(
-                                f"Conexão perdida com o servidor: {uri} | Reconectando em {backoff} seg. {repr(ws.exception())}",
-                                tooltip=True, log_type="warning")
+                                f"Conexão perdida com o servidor: {uri} | Reconectando em {time_format(backoff)} seg. {repr(ws.exception())}",
+                                tooltip=True, log_type="error")
 
-                            await asyncio.sleep(backoff * 10)
+                            await asyncio.sleep(backoff)
                             backoff *= 1.3
 
                         else:
@@ -672,7 +686,7 @@ class RpcClient:
 
                     self.gui.update_log(
                         f"Desconectado: {uri} | Nova tentativa de conexão em "
-                        f"{self.config['reconnect_timeout']} segundos...",
+                        f"{time_format(self.config['reconnect_timeout']*1000)}...",
                         log_type="warning"
                     )
                     await self.clear_users_presences(uri)
@@ -680,11 +694,14 @@ class RpcClient:
 
             except (aiohttp.WSServerHandshakeError, aiohttp.ClientConnectorError):
 
+                tm = backoff * 5
+
                 self.gui.update_log(
-                    f"Servidor indisponível: {uri} | Nova tentativa de conexão em 10 minutos.",
+                    f"Servidor indisponível: {uri} | Nova tentativa de conexão em {time_format(tm*1000)}.",
                     log_type="warning"
                 )
-                await asyncio.sleep(600)
+                await asyncio.sleep(tm)
+                backoff *= 2
 
             except Exception as e:
 
@@ -710,4 +727,9 @@ class RpcClient:
 
 
 if __name__ == "__main__":
-    RpcClient()
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-autostart', type=int, help='Iniciar presence automaticamente', default=30)
+    args = parser.parse_args()
+
+    RpcClient(autostart=args.autostart)

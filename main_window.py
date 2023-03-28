@@ -3,9 +3,11 @@ from __future__ import annotations
 import sys
 import time
 import traceback
+from typing import TYPE_CHECKING, Literal
+
+import psutil
 from PySimpleGUI import PySimpleGUI as sg
 from psgtray import SystemTray
-from typing import TYPE_CHECKING, Literal
 
 if TYPE_CHECKING:
     from rpc_client import RpcClient
@@ -14,7 +16,7 @@ MLINE_KEY = '-MLINE-'+sg.WRITE_ONLY_KEY
 
 class RPCGui:
 
-    def __init__(self, client: RpcClient):
+    def __init__(self, client: RpcClient, autostart: int = 15):
         self.client = client
         self.appname = f"Discord RPC (Music Bot) v{self.client.version}"
         self.config = self.client.config
@@ -29,7 +31,43 @@ class RPCGui:
         self.window = self.get_window()
         menu = ['', ['Abrir Janela', 'Fechar App']]
         self.tray = SystemTray(menu, single_click_events=True, window=self.window, tooltip=self.appname)
-        self.tray.hide_icon()
+
+        if autostart:
+
+            if not self.config["urls"]:
+                self.tray.hide_icon()
+
+            else:
+
+                self.hide_to_tray()
+                self.tray.show_message(self.appname, 'Procurando por instancias do discord em execução.')
+
+                discord_detected = False
+
+                while True:
+
+                    for proc in psutil.process_iter():
+
+                        try:
+                            name = proc.name().split(".")[0]
+                        except:
+                            continue
+
+                        if name in ("Discord", "DiscordCanary", "DiscordPTB"):
+                            discord_detected = True
+                            self.tray.show_message(self.appname, f'Instancia detectada: {name}')
+                            break
+
+                    if discord_detected:
+                        break
+
+                    time.sleep(autostart)
+
+                self.start_presence()
+
+        else:
+            self.tray.hide_icon()
+
         self.window_loop()
 
 
@@ -59,9 +97,9 @@ class RPCGui:
                                  default=self.config["show_thumbnail"], key='show_thumbnail', enable_events=True)],
                     [sg.Checkbox('Exibir quantidade de músicas na fila (quando disponível).',
                                  default=self.config["enable_queue_text"], key='enable_queue_text', enable_events=True)],
-                    [sg.Checkbox('Exibir detalhes do canal onde o player está ativo (quantidade de membros, nome do '
-                                 'servidor e canal, etc).', default=self.config["show_guild_details"],
-                                 key='show_guild_details', enable_events=True)],
+                    [sg.Checkbox('Bloquear update de status com músicas adicionadas por outros membros.',
+                                 default=self.config["block_other_users_track"], key='block_other_users_track',
+                                 enable_events=True)],
                     [sg.Checkbox('Exibir botão de convite do bot (quando disponível).',
                                  default=self.config['bot_invite'], key='bot_invite', enable_events=True)],
                     [sg.Checkbox('Carregar presence em todas as instâncias do discord (Beta).',
@@ -172,6 +210,7 @@ class RPCGui:
         if log_type == "warning":
             self.window[MLINE_KEY].update(text + "\n", text_color_for_value='yellow', append=True)
         elif log_type == "error":
+            self.tray.show_message(self.appname, f'Erro: {text}.')
             self.window[MLINE_KEY].update(text + "\n", text_color_for_value='red', append=True)
         elif log_type == "info":
             self.window[MLINE_KEY].update(text + "\n", text_color_for_value='cyan', append=True)
@@ -194,6 +233,40 @@ class RPCGui:
             for e in disable:
                 self.window[e].update(disabled=True)
 
+    def show_window(self):
+        self.window.un_hide()
+        self.window.bring_to_front()
+        self.tray.hide_icon()
+
+    def hide_to_tray(self):
+        self.window.hide()
+        self.tray.show_icon()
+
+    def start_presence(self):
+
+        if not self.config["urls"]:
+            sg.popup_ok(f"Você deve adicionar pelo menos um link WS antes de iniciar presence!")
+            self.window["sockets_url"].select()
+            return
+
+        if not self.config["token"]:
+            sg.popup_ok(f"Você deve incluir o token de acesso para iniciar presence!\n"
+                        f"Caso não tenha, use o comando /rich_presence no bot.")
+            self.window["sockets_url"].select()
+            return
+
+        self.client.gui = self
+        try:
+            self.client.get_app_instances()
+        except Exception as e:
+            self.update_log(repr(e), exception=e)
+            return
+        self.client.start_ws()
+        self.rpc_started = True
+        self.update_buttons(
+            enable=["stop_presence"],
+            disable=["start_presence", "load_all_instances", "dummy_app_id", "override_appid", "btn_paste_token"]
+        )
 
     def window_loop(self):
 
@@ -209,9 +282,7 @@ class RPCGui:
 
                 if values[event] in ("Abrir Janela", sg.EVENT_SYSTEM_TRAY_ICON_DOUBLE_CLICKED,
                                      sg.EVENT_SYSTEM_TRAY_ICON_ACTIVATED):
-                    self.window.un_hide()
-                    self.window.bring_to_front()
-                    self.tray.hide_icon()
+                    self.show_window()
 
                 elif values[event] == "Fechar App":
                     self.tray.hide_icon()
@@ -219,8 +290,7 @@ class RPCGui:
                     break
 
             elif event == "tray":
-                self.window.hide()
-                self.tray.show_icon()
+                self.hide_to_tray()
                 self.tray.show_message(self.appname, 'Executando em segundo plano.')
 
             elif event == "theme":
@@ -319,30 +389,7 @@ class RPCGui:
                 self.update_urls()
 
             elif event == "start_presence":
-
-                if not self.config["urls"]:
-                    sg.popup_ok(f"Você deve adicionar pelo menos um link WS antes de iniciar presence!")
-                    self.window["sockets_url"].select()
-                    continue
-
-                if not self.config["token"]:
-                    sg.popup_ok(f"Você deve incluir o token de acesso para iniciar presence!\n"
-                                f"Caso não tenha, use o comando /rich_presence no bot.")
-                    self.window["sockets_url"].select()
-                    continue
-
-                self.client.gui = self
-                try:
-                    self.client.get_app_instances()
-                except Exception as e:
-                    self.update_log(repr(e), exception=e)
-                    continue
-                self.client.start_ws()
-                self.rpc_started = True
-                self.update_buttons(
-                    enable=["stop_presence"],
-                    disable=["start_presence", "load_all_instances", "dummy_app_id", "override_appid", "btn_paste_token"]
-                )
+                self.start_presence()
 
             elif event == "stop_presence":
                 self.client.close_app_instances()
