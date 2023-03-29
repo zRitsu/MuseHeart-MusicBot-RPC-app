@@ -139,13 +139,14 @@ _t.start()
 class RpcClient:
 
     def __init__(self, autostart: int = 0):
-        self.version = 2.5
+        self.version = 2.6
         self.last_data = {}
         self.tasks = []
         self.main_task = None
         self.config = config
         self.langs = langs
         self.session: Optional[aiohttp.ClientSession] = None
+        self.closing = False
 
         if os.path.isdir("./langs"):
 
@@ -607,8 +608,10 @@ class RpcClient:
 
                             try:
                                 if not data['op']:
+                                    print(data)
                                     continue
                             except:
+                                traceback.print_exc()
                                 continue
 
                             bot_id = data.pop("bot_id", None)
@@ -617,6 +620,13 @@ class RpcClient:
                                 bot_id = int(self.config["dummy_app_id"])
 
                             bot_name = data.pop("bot_name", None)
+
+                            if data['op'] == "disconnect":
+                                self.gui.update_log(f"op: {data['op']} | {uri} | reason: {data.get('reason')}",
+                                                    log_type="error")
+                                self.closing = True
+                                await ws.close()
+                                return
 
                             if bot_id:
                                 try:
@@ -670,6 +680,9 @@ class RpcClient:
                         elif msg.type == aiohttp.WSMsgType.ERROR:
 
                             await self.clear_users_presences(uri)
+
+                            if self.closing:
+                                return
 
                             self.gui.update_log(
                                 f"Conexão perdida com o servidor: {uri} | Reconectando em {time_format(backoff)} seg. {repr(ws.exception())}",
