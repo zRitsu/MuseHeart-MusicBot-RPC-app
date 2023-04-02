@@ -520,6 +520,11 @@ class RpcClient:
             "details": text_idle[0],
         }
 
+        try:
+            payload["timestamps"] = {"end": data["idle_endtime"]}
+        except KeyError:
+            pass
+
         if len(text_idle) > 1:
             payload['state'] = text_idle[1]
 
