@@ -49,4 +49,4 @@ Após configurar esses dois itens, basta clicar em "Iniciar Presence".
 
 ---
 
-### Caso tenha algum problema, poste uma [issue](https://github.com/zRitsu/disnake-LL-music-bot/issues) detalhando o problema.
+### Caso tenha algum problema, poste uma [issue](https://github.com/zRitsu/Discord-MusicBot-RPC/issues) detalhando o problema.
