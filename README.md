@@ -7,9 +7,6 @@
 ### App Preview:
 ![](https://cdn.discordapp.com/attachments/554468640942981147/1087135148761428028/image.png)
 
-### Support Server:
-[![Muse Support Server](https://discordapp.com/api/guilds/911370624507707483/embed.png?style=banner2)](https://discord.gg/R7BPG8fZTr)
-
 ## Para usar o app você pode usar um dos seguintes métodos abaixo:
 
 ---
@@ -51,3 +48,5 @@ ws://localhost/ws
 Após configurar esses dois itens, basta clicar em "Iniciar Presence".
 
 ---
+
+### Caso tenha algum problema, poste uma [issue](https://github.com/zRitsu/disnake-LL-music-bot/issues) detalhando o problema.
