@@ -3,6 +3,7 @@ from __future__ import annotations
 import sys
 import time
 import traceback
+from tkinter import TclError
 from typing import TYPE_CHECKING, Literal
 
 import psutil
@@ -299,7 +300,10 @@ class RPCGui:
 
             elif event == "btn_paste_token":
 
-                token = self.window.TKroot.clipboard_get().replace("\n","").replace(" ", "")
+                try:
+                    token = self.window.TKroot.clipboard_get().replace("\n","").replace(" ", "")
+                except TclError:
+                    token = ""
 
                 if len(token) != 50:
                     sg.popup_ok(f"O token colado não possui 50 caracteres:\n"
@@ -314,7 +318,12 @@ class RPCGui:
 
                 while True:
 
-                    url = sg.PopupGetText("Adicione o link do RPC.", default_text=self.window.TKroot.clipboard_get())
+                    try:
+                        url_clipboard = self.window.TKroot.clipboard_get()
+                    except TclError:
+                        url_clipboard = ""
+
+                    url = sg.PopupGetText("Adicione o link do RPC.", default_text=url_clipboard)
 
                     if url is None:
                         break
