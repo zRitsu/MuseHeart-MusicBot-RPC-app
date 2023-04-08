@@ -1,7 +1,7 @@
 import argparse
 import asyncio
-import json
 import datetime
+import json
 import os
 import pprint
 import sys
@@ -9,13 +9,15 @@ import time
 import traceback
 from threading import Thread
 from typing import Optional, Union
+
 import aiohttp
-from main_window import RPCGui
 import tornado.web
+from PySimpleGUI import PySimpleGUI as sg
 from discoIPC.ipc import DiscordIPC
+
 from config_loader import read_config
 from langs import langs
-from PySimpleGUI import PySimpleGUI as sg
+from main_window import RPCGui
 
 config = read_config()
 
@@ -139,7 +141,7 @@ _t.start()
 class RpcClient:
 
     def __init__(self, autostart: int = 0):
-        self.version = 2.6
+        self.version = "2.6.1"
         self.last_data = {}
         self.tasks = []
         self.main_task = None
