@@ -303,7 +303,8 @@ class RPCGui:
                 try:
                     token = self.window.TKroot.clipboard_get().replace("\n","").replace(" ", "")
                 except TclError:
-                    token = ""
+                    sg.popup_ok(f"Não há token copiado para a área de transferência.")
+                    continue
 
                 if len(token) != 50:
                     sg.popup_ok(f"O token colado não possui 50 caracteres:\n"
@@ -319,7 +320,7 @@ class RPCGui:
                 while True:
 
                     try:
-                        url_clipboard = self.window.TKroot.clipboard_get()
+                        url_clipboard = self.window.TKroot.clipboard_get().replace("\n","").replace(" ", "")
                     except TclError:
                         url_clipboard = ""
 
