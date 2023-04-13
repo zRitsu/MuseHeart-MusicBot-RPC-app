@@ -32,15 +32,12 @@ class RPCGui:
         self.window = self.get_window()
         menu = ['', ['Abrir Janela', 'Fechar App']]
         self.tray = SystemTray(menu, single_click_events=True, window=self.window, tooltip=self.appname)
+        self.hide_to_tray()
 
         if autostart > 14:
 
-            if not self.config["urls"]:
-                self.tray.hide_icon()
+            if self.config["urls"]:
 
-            else:
-
-                self.hide_to_tray()
                 self.tray.show_message(self.appname, 'Procurando por instancias do discord em execução.')
 
                 discord_detected = False
@@ -65,9 +62,6 @@ class RPCGui:
                     time.sleep(autostart)
 
                 self.start_presence()
-
-        else:
-            self.tray.hide_icon()
 
         self.window_loop()
 
@@ -237,7 +231,6 @@ class RPCGui:
     def show_window(self):
         self.window.un_hide()
         self.window.bring_to_front()
-        self.tray.hide_icon()
 
     def hide_to_tray(self):
         self.window.hide()
