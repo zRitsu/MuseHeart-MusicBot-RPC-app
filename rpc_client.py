@@ -458,6 +458,11 @@ class RpcClient:
                 elif album_name != track["title"]:
                     state += f' | {self.get_lang("album")}: {album_name}'
 
+            try:
+                if track["247"]:
+                    state += " | ✅24/7"
+            except KeyError:
+                pass
 
             try:
                 if track["queue"] and self.config["enable_queue_text"]:
@@ -605,103 +610,112 @@ class RpcClient:
 
                     async for msg in ws:
 
-                        if msg.type == aiohttp.WSMsgType.TEXT:
+                        try:
 
-                            try:
-                                data = json.loads(msg.data)
-                            except Exception:
-                                traceback.print_exc()
-                                continue
+                            if msg.type == aiohttp.WSMsgType.TEXT:
 
-                            try:
-                                if not data['op']:
-                                    print(data)
-                                    continue
-                            except:
-                                traceback.print_exc()
-                                continue
-
-                            bot_id = data.pop("bot_id", None)
-
-                            if self.config["override_appid"]:
-                                bot_id = int(self.config["dummy_app_id"])
-
-                            bot_name = data.pop("bot_name", None)
-
-                            if data['op'] == "disconnect":
-                                self.gui.update_log(f"op: {data['op']} | {uri} | reason: {data.get('reason')}",
-                                                    log_type="error")
-                                self.closing = True
-                                await ws.close()
-                                return
-
-                            if bot_id:
                                 try:
-                                    self.bots_socket[uri].add(bot_id)
-                                except TypeError:
-                                    for i in bot_id:
-                                        self.bots_socket[uri].add(i)
+                                    data = json.loads(msg.data)
+                                except Exception:
+                                    traceback.print_exc()
+                                    continue
 
-                            user_ws = data.pop("user", None)
+                                try:
+                                    if not data['op']:
+                                        print(data)
+                                        continue
+                                except:
+                                    traceback.print_exc()
+                                    continue
 
-                            if not user_ws:
-                                continue
+                                bot_id = data.pop("bot_id", None)
 
-                            self.users_socket[uri].add(user_ws)
+                                if self.config["override_appid"]:
+                                    bot_id = int(self.config["dummy_app_id"])
 
-                            try:
-                                user = user_clients[user_ws]["user"]
-                            except KeyError:
-                                continue
+                                bot_name = data.pop("bot_name", None)
 
-                            if data['op'] == "exception":
+                                if data['op'] == "disconnect":
+                                    self.gui.update_log(f"op: {data['op']} | {uri} | reason: {data.get('reason')}",
+                                                        log_type="error")
+                                    self.closing = True
+                                    await ws.close()
+                                    return
+
+                                if bot_id:
+                                    try:
+                                        self.bots_socket[uri].add(bot_id)
+                                    except TypeError:
+                                        for i in bot_id:
+                                            self.bots_socket[uri].add(i)
+
+                                user_ws = data.pop("user", None)
+
+                                if not user_ws:
+                                    continue
+
+                                self.users_socket[uri].add(user_ws)
+
+                                try:
+                                    user = user_clients[user_ws]["user"]
+                                except KeyError:
+                                    continue
+
+                                if data['op'] == "exception":
+                                    self.gui.update_log(f"op: {data['op']} | {user} {user_ws} | "
+                                                        f"bot: {(bot_name + ' ') if bot_name else ''}[{bot_id}] | "
+                                                        f"\nerror: {data.get('message')}",
+                                                        log_type="error")
+                                    continue
+
                                 self.gui.update_log(f"op: {data['op']} | {user} {user_ws} | "
-                                                    f"bot: {(bot_name + ' ') if bot_name else ''}[{bot_id}] | "
-                                                    f"\nerror: {data.get('message')}",
-                                                    log_type="error")
-                                continue
+                                                    f"bot: {(bot_name + ' ') if bot_name else ''}[{bot_id}]",
+                                                    log_type="info")
 
-                            self.gui.update_log(f"op: {data['op']} | {user} {user_ws} | "
-                                                f"bot: {(bot_name + ' ') if bot_name else ''}[{bot_id}]",
-                                                log_type="info")
+                                try:
+                                    self.last_data[user_ws][bot_id] = data
+                                except KeyError:
+                                    self.last_data[user_ws] = {bot_id: data}
 
-                            try:
-                                self.last_data[user_ws][bot_id] = data
-                            except KeyError:
-                                self.last_data[user_ws] = {bot_id: data}
+                                try:
+                                    del data["token"]
+                                except KeyError:
+                                    pass
 
-                            try:
-                                del data["token"]
-                            except KeyError:
-                                pass
+                                self.process_data(user_ws, bot_id, data)
 
-                            self.process_data(user_ws, bot_id, data)
+                            elif msg.type in (aiohttp.WSMsgType.CLOSED,
+                                              aiohttp.WSMsgType.CLOSING,
+                                              aiohttp.WSMsgType.CLOSE):
 
-                        elif msg.type in (aiohttp.WSMsgType.CLOSED,
-                                          aiohttp.WSMsgType.CLOSING,
-                                          aiohttp.WSMsgType.CLOSE):
-
-                            self.gui.update_log(f"Conexão finalizada com o servidor: {uri}")
-                            return
-
-                        elif msg.type == aiohttp.WSMsgType.ERROR:
-
-                            await self.clear_users_presences(uri)
-
-                            if self.closing:
+                                self.gui.update_log(f"Conexão finalizada com o servidor: {uri}")
                                 return
 
-                            self.gui.update_log(
-                                f"Conexão perdida com o servidor: {uri} | Reconectando em {time_format(backoff)} seg. {repr(ws.exception())}",
-                                tooltip=True, log_type="error")
+                            elif msg.type == aiohttp.WSMsgType.ERROR:
 
-                            await asyncio.sleep(backoff)
-                            backoff *= 1.3
+                                await self.clear_users_presences(uri)
 
-                        else:
+                                if self.closing:
+                                    return
+
+                                self.gui.update_log(
+                                    f"Conexão perdida com o servidor: {uri} | Reconectando em {time_format(backoff)} seg. {repr(ws.exception())}",
+                                    tooltip=True, log_type="error")
+
+                                await asyncio.sleep(backoff)
+                                backoff *= 1.3
+
+                            else:
+                                self.gui.update_log(
+                                    f"Unknow message type: {msg.type}",
+                                    log_type="warning"
+                                )
+
+                        except Exception as e:
+                            traceback.print_exc()
                             self.gui.update_log(
-                                f"Unknow message type: {msg.type}",
-                                log_type="warning"
+                                f"Ocorreu um erro no link: {uri}\n{repr(e)}.",
+                                log_type="error"
                             )
 
                     self.gui.update_log(
