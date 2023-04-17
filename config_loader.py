@@ -22,7 +22,7 @@ def read_config():
         "block_other_users_track": False,
         "token": "",
         "assets": {
-            "loop": "https://cdn.discordapp.com/emojis/912965656624889916.gif",
+            "loop": "https://i.ibb.co/5Mj4HjT/loop-track.gif",
             "loop_queue": "https://i.ibb.co/5Mj4HjT/loop-track.gif",
             "pause": "https://i.ibb.co/mDBMnH8/pause.png",
             "stream": "https://i.ibb.co/Qf9BSQb/stream.png",
