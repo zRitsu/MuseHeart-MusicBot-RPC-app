@@ -422,14 +422,14 @@ class RpcClient:
 
                 if playlist_name and playlist_url:
 
-                    if (playlist_size := len(playlist_name)) > 25:
+                    if (playlist_size := len(playlist_name)) > 32:
                         state += f' | {self.get_lang("playlist")}: {playlist_name}'
                         buttons.append(
                             {"label": self.get_lang("view_playlist"), "url": playlist_url.replace("www.", "")})
 
                     else:
 
-                        if playlist_size < 15:
+                        if playlist_size < 23:
                             playlist_name = f"Playlist: {playlist_name}"
 
                         buttons.append({"label": playlist_name, "url": playlist_url.replace("www.", "")})
@@ -444,14 +444,15 @@ class RpcClient:
 
                 if len(buttons) < 2:
 
-                    if (album_size := len(album_name)) > 22:
+                    if (album_size := len(album_name)) > 32:
                         state += f' | {self.get_lang("album")}: {album_name}'
                         buttons.append({"label": self.get_lang("view_album"), "url": album_url.replace("www.", "")})
 
                     else:
+                        album_txt = self.get_lang('album')
 
-                        if album_size < 17:
-                            album_name = f"{self.get_lang('album')}: {album_name}"
+                        if (album_size + len(album_name) + 2) > 32:
+                            album_name = f"{album_txt}: {album_name}"
 
                         buttons.append({"label": album_name, "url": album_url})
 
