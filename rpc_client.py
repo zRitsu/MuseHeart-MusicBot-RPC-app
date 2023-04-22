@@ -451,7 +451,7 @@ class RpcClient:
                     else:
                         album_txt = self.get_lang('album')
 
-                        if (album_size + len(album_name) + 2) > 32:
+                        if (len(album_txt) + album_size + 2) < 33:
                             album_name = f"{album_txt}: {album_name}"
 
                         buttons.append({"label": album_name, "url": album_url})
