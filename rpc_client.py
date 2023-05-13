@@ -325,7 +325,7 @@ class RpcClient:
 
         track = data.pop("track", None)
         thumb = data.pop("thumb", None)
-        listen_along_url = data.pop("listen_url", None)
+        listen_along_url = data.pop("listen_along_invite", None)
 
         for d in dict(data):
             if d not in valid_presence_fields:
