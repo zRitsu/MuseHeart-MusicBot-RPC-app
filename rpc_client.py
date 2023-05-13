@@ -325,6 +325,7 @@ class RpcClient:
 
         track = data.pop("track", None)
         thumb = data.pop("thumb", None)
+        listen_along_url = data.pop("listen_url", None)
 
         for d in dict(data):
             if d not in valid_presence_fields:
@@ -409,7 +410,7 @@ class RpcClient:
             if (url := track.get("url")) and self.config["show_listen_button"]:
                 if not self.config["playlist_refs"]:
                     url = url.split("&list=")[0]
-                buttons.append({"label": self.get_lang("listen"), "url": url.replace("www.", "")})
+                buttons.append({"label": self.get_lang("view_music"), "url": url.replace("www.", "")})
 
             state += f'{self.get_lang("author")}: {track["author"]}'
 
@@ -467,6 +468,7 @@ class RpcClient:
 
             try:
                 if track["queue"] and self.config["enable_queue_text"]:
+                    #payload["party"] = {"size": [1, track["queue"]], "id": str(uuid.uuid4())}
                     state += f' | {self.get_lang("queue").replace("{queue}", str(track["queue"]))}'
             except KeyError:
                 pass
@@ -480,6 +482,16 @@ class RpcClient:
 
             if buttons:
                 payload["buttons"] = buttons
+
+            if self.config["show_listen_along_button"] and listen_along_url:
+
+                if len(buttons) > 1:
+                    try:
+                        buttons.pop()
+                    except:
+                        pass
+
+                buttons.insert(0, {"label": self.get_lang("listen_along"), "url": listen_along_url})
 
         try:
 

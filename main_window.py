@@ -6,7 +6,6 @@ import traceback
 from tkinter import TclError
 from typing import TYPE_CHECKING, Literal
 
-import psutil
 from PySimpleGUI import PySimpleGUI as sg
 from psgtray import SystemTray
 
@@ -38,30 +37,14 @@ class RPCGui:
 
             if self.config["urls"]:
 
-                self.tray.show_message(self.appname, 'Procurando por instancias do discord em execução.')
-
-                discord_detected = False
-
                 while True:
 
-                    for proc in psutil.process_iter():
-
-                        try:
-                            name = proc.name().split(".")[0]
-                        except:
-                            continue
-
-                        if name in ("Discord", "DiscordCanary", "DiscordPTB"):
-                            discord_detected = True
-                            self.tray.show_message(self.appname, f'Instancia detectada: {name}')
-                            break
-
-                    if discord_detected:
+                    try:
+                        self.start_presence()
                         break
-
-                    time.sleep(autostart)
-
-                self.start_presence()
+                    except:
+                        time.sleep(autostart)
+                        continue
 
         self.window_loop()
 
@@ -231,6 +214,7 @@ class RPCGui:
     def show_window(self):
         self.window.un_hide()
         self.window.bring_to_front()
+        self.window.normal()
 
     def hide_to_tray(self):
         self.window.hide()

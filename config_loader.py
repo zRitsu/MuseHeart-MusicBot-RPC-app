@@ -10,6 +10,7 @@ def read_config():
         "load_all_instances": False,
         "show_listen_button": True,
         "show_playlist_button": True,
+        "show_listen_along_button": False,
         "playlist_refs": True,
         "show_thumbnail": True,
         "bot_invite": True,
