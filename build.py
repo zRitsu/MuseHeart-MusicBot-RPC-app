@@ -1,5 +1,6 @@
 import os
 from cx_Freeze import setup, Executable
+from rpc_client import app_version
 
 if os.path.isfile("./icon.ico"):
     icon_file = "icon.ico"
@@ -8,7 +9,7 @@ else:
 
 setup(
     name = "Discord RPC (MusicBot)",
-    version = "2.0",
+    version = app_version,
     description = "Rich presence para bots relacionado a minha repo: zRitsu/disnake-LL-music-bot",
         options = {"build_exe": {
         'packages': ["os", "pystray._win32"],

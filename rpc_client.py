@@ -133,6 +133,8 @@ def fix_characters(text: str, limit=30):
 
 loop = asyncio.new_event_loop()
 
+app_version = "2.6.1"
+
 _t = Thread(target=loop.run_forever)
 _t.daemon = True
 _t.start()
@@ -141,7 +143,6 @@ _t.start()
 class RpcClient:
 
     def __init__(self, autostart: int = 0):
-        self.version = "2.6.1"
         self.last_data = {}
         self.tasks = []
         self.main_task = None
@@ -445,14 +446,16 @@ class RpcClient:
 
             if album_url:
 
+                album_txt = f'{self.get_lang("album")}: {album_name}'
+
                 if len(buttons) < 2:
 
                     if len(album_name) > 32:
                         buttons.append({"label": self.get_lang("view_album"), "url": album_url.replace("www.", "")})
                     else:
-                        buttons.append({"label": album_name, "url": album_url})
+                        buttons.append({"label": album_txt, "url": album_url})
 
-                large_image_desc.append(f'{self.get_lang("album")}: {album_name}')
+                large_image_desc.append(album_txt)
 
             try:
                 if track["247"]:
@@ -534,6 +537,7 @@ class RpcClient:
             "thumb": data.pop("thumb", None),
             "assets": {},
             "details": text_idle[0],
+            "timestamps": {}
         }
 
         try:
@@ -613,7 +617,7 @@ class RpcClient:
                                 "op": "rpc_update",
                                 "user_ids": list(user_clients),
                                 "token": self.config["token"].replace(" ", "").replace("\n", ""),
-                                "version": self.version
+                                "version": app_version
                             }
                         )
                     )
