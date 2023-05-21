@@ -15,7 +15,7 @@ import tornado.web
 from PySimpleGUI import PySimpleGUI as sg
 from discoIPC.ipc import DiscordIPC
 
-from app_version import app_version
+from app_version import version
 from config_loader import read_config
 from langs import langs
 from main_window import RPCGui
@@ -616,7 +616,7 @@ class RpcClient:
                                 "op": "rpc_update",
                                 "user_ids": list(user_clients),
                                 "token": self.config["token"].replace(" ", "").replace("\n", ""),
-                                "version": app_version
+                                "version": version
                             }
                         )
                     )
