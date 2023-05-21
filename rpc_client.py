@@ -418,6 +418,7 @@ class RpcClient:
             playlist_name = track.get("playlist_name")
             album_url = track.get("album_url")
             album_name = track.get("album_name")
+            large_image_desc = []
 
             if self.config["show_playlist_button"]:
 
@@ -432,33 +433,26 @@ class RpcClient:
 
                         if playlist_size < 23:
                             playlist_name = f"Playlist: {playlist_name}"
+                            large_image_desc.append(playlist_name)
+
+                        else:
+                            large_image_desc.append(f'{self.get_lang("playlist")}: {playlist_name}')
 
                         buttons.append({"label": playlist_name, "url": playlist_url.replace("www.", "")})
 
-                elif state and playlist_name:
-                    state += f' | {playlist_name}'
-
                 elif playlist_name:
-                    state += f'{self.get_lang("playlist")}: {playlist_name}'
+                    large_image_desc.append(f'{self.get_lang("playlist")}: {playlist_name}')
 
             if album_url:
 
                 if len(buttons) < 2:
 
-                    if (album_size := len(album_name)) > 32:
-                        state += f' | {self.get_lang("album")}: {album_name}'
+                    if len(album_name) > 32:
                         buttons.append({"label": self.get_lang("view_album"), "url": album_url.replace("www.", "")})
-
                     else:
-                        album_txt = self.get_lang('album')
-
-                        if (len(album_txt) + album_size + 2) < 33:
-                            album_name = f"{album_txt}: {album_name}"
-
                         buttons.append({"label": album_name, "url": album_url})
 
-                elif album_name != track["title"]:
-                    state += f' | {self.get_lang("album")}: {album_name}'
+                large_image_desc.append(f'{self.get_lang("album")}: {album_name}')
 
             try:
                 if track["247"]:
@@ -468,7 +462,6 @@ class RpcClient:
 
             try:
                 if track["queue"] and self.config["enable_queue_text"]:
-                    #payload["party"] = {"size": [1, track["queue"]], "id": str(uuid.uuid4())}
                     state += f' | {self.get_lang("queue").replace("{queue}", str(track["queue"]))}'
             except KeyError:
                 pass
@@ -478,10 +471,10 @@ class RpcClient:
 
             payload['state'] = state
 
-            payload["type"] = 2
+            if large_image_desc:
+                payload['assets']['large_text'] = " | ".join(large_image_desc)
 
-            if buttons:
-                payload["buttons"] = buttons
+            payload["type"] = 2
 
             if self.config["show_listen_along_button"] and listen_along_url:
 
@@ -492,6 +485,9 @@ class RpcClient:
                         pass
 
                 buttons.insert(0, {"label": self.get_lang("listen_along"), "url": listen_along_url})
+
+            if buttons:
+                payload["buttons"] = buttons
 
         try:
 
@@ -562,6 +558,7 @@ class RpcClient:
 
         if buttons:
             payload["buttons"] = buttons
+
 
         return payload
 
