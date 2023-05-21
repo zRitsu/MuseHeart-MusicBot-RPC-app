@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Literal
 
 from PySimpleGUI import PySimpleGUI as sg
 from psgtray import SystemTray
+from app_version import version
 
 if TYPE_CHECKING:
     from rpc_client import RpcClient
@@ -18,7 +19,7 @@ class RPCGui:
 
     def __init__(self, client: RpcClient, autostart: int = 0):
         self.client = client
-        self.appname = f"Discord RPC (Music Bot) v{self.client.version}"
+        self.appname = f"Discord RPC (Music Bot) v{version}"
         self.config = self.client.config
         self.ready = False
 
