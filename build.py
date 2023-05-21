@@ -1,6 +1,6 @@
 import os
 from cx_Freeze import setup, Executable
-from rpc_client import app_version
+from app_version import app_version
 
 if os.path.isfile("./icon.ico"):
     icon_file = "icon.ico"

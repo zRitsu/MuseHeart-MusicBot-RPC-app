@@ -15,6 +15,7 @@ import tornado.web
 from PySimpleGUI import PySimpleGUI as sg
 from discoIPC.ipc import DiscordIPC
 
+from app_version import app_version
 from config_loader import read_config
 from langs import langs
 from main_window import RPCGui
@@ -132,8 +133,6 @@ def fix_characters(text: str, limit=30):
 
 
 loop = asyncio.new_event_loop()
-
-app_version = "2.6.1"
 
 _t = Thread(target=loop.run_forever)
 _t.daemon = True
