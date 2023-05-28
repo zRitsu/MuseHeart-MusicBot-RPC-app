@@ -65,16 +65,6 @@ class RPCGui:
                     [sg.Text('Idioma da presence:'),
                      sg.Combo(list(self.langs), default_value=self.config["language"], auto_size_text=True,
                               key='language', enable_events=True)],
-                    [sg.Checkbox('Exibir o botão: ver/ouvir música/vídeo.', default=self.config["show_listen_button"],
-                                 key='show_listen_button', enable_events=True)],
-                    [sg.Checkbox('Exibir o botão: Ouvir junto via Discord (caso o bot envie o link de invite da call de convidado).',
-                                 default=self.config["show_listen_along_button"], key='show_listen_along_button',
-                                 enable_events=True)],
-                    [sg.Checkbox('Exibir o botão: playlist (quando disponível).',
-                                 default=self.config["show_playlist_button"], key='show_playlist_button',
-                                 enable_events=True)],
-                    [sg.Checkbox('Adicionar o ID da playlist na url do botão de ver/ouvir (Youtube).',
-                                 default=self.config["playlist_refs"], key='playlist_refs', enable_events=True)],
                     [sg.Checkbox('Exibir miniatura da música (quando disponível).',
                                  default=self.config["show_thumbnail"], key='show_thumbnail', enable_events=True)],
                     [sg.Checkbox('Exibir quantidade de músicas na fila (quando disponível).',
@@ -82,8 +72,6 @@ class RPCGui:
                     [sg.Checkbox('Bloquear update de status com músicas adicionadas por outros membros.',
                                  default=self.config["block_other_users_track"], key='block_other_users_track',
                                  enable_events=True)],
-                    [sg.Checkbox('Exibir botão de convite do bot (quando disponível).',
-                                 default=self.config['bot_invite'], key='bot_invite', enable_events=True)],
                     [sg.Checkbox('Carregar presence em todas as instâncias do discord (Beta).',
                                  default=self.config['load_all_instances'], key='load_all_instances', enable_events=True)],
                     [sg.Checkbox('Usar APP_ID Customizado: ',
@@ -91,7 +79,44 @@ class RPCGui:
                                  enable_events=True),
                      sg.InputText(default_text=self.config["dummy_app_id"], key="dummy_app_id", enable_events=True)],
                 ], expand_x=True),
-            ]
+            ],
+            [
+                sg.Frame("RPC Button Settings", [
+                    [
+                        sg.Frame("", [
+                            [sg.Checkbox('Exibir o botão: ver/ouvir música/vídeo.',
+                                         default=self.config["show_listen_button"],
+                                         key='show_listen_button', enable_events=True)],
+                            [sg.Checkbox('Adicionar o ID da playlist na url do botão de ver/ouvir (Youtube).',
+                                         default=self.config["playlist_refs"], key='playlist_refs',
+                                         enable_events=True)],
+                            [sg.Checkbox(
+                                'Exibir o botão: Ouvir junto via Discord (Caso disponível).',
+                                default=self.config["show_listen_along_button"], key='show_listen_along_button',
+                                enable_events=True)],
+                            [sg.Checkbox('Exibir o botão: playlist (quando disponível).',
+                                         default=self.config["show_playlist_button"], key='show_playlist_button',
+                                         enable_events=True)],
+                            [sg.Checkbox('Exibir botão de convite do bot (quando disponível).',
+                                         default=self.config['bot_invite'], key='bot_invite', enable_events=True)],
+                        ], border_width=0),
+                        sg.Frame("Prioridade de botões", [
+                            [
+                                sg.Listbox(values=self.config["button_order"], size=(17, 5), expand_x=False,
+                                           bind_return_key=True, key="button_order"),
+                            ],
+                            [
+                                sg.Frame("", [
+                                    [
+                                        sg.Button("Up", key="btn_up_button_order", enable_events=True, expand_x=True),
+                                        sg.Button("Down", key="btn_down_button_order", enable_events=True, expand_x=True)
+                                    ],
+                                ], border_width=0, expand_x=True)
+                            ]
+                        ])
+                    ]
+                ], expand_x=True),
+            ],
         ]
 
         tab_assets = [
@@ -152,7 +177,7 @@ class RPCGui:
                         [
                             sg.Tab('Main Settings', tab_config, element_justification='center'),
                             sg.Tab('Socket Settings', tab_urls, key="sockets_url"),
-                            sg.Tab('Assets', tab_assets, element_justification='center')
+                            sg.Tab('Assets', tab_assets, element_justification='center'),
                         ]
                     ], key="main_tab"
                 ),
@@ -278,6 +303,34 @@ class RPCGui:
 
             elif event == "clear_log":
                 self.window[MLINE_KEY].update("Log limpo com sucesso!\n", text_color_for_value='green2')
+
+            elif event == "btn_up_button_order":
+
+                index = self.config["button_order"].index(values["button_order"][0])
+
+                if index == 0:
+                    continue
+
+                current = self.config["button_order"].pop(index)
+
+                self.config["button_order"].insert(index-1, current)
+
+                self.window['button_order'].update(values=self.config["button_order"], set_to_index=index-1)
+                self.update_data()
+
+            elif event == "btn_down_button_order":
+
+                index = self.config["button_order"].index(values["button_order"][0])
+
+                if index == len(self.config["button_order"])-1:
+                    continue
+
+                current = self.config["button_order"].pop(index)
+
+                self.config["button_order"].insert(index + 1, current)
+
+                self.window['button_order'].update(values=self.config["button_order"], set_to_index=index+1)
+                self.update_data()
 
             elif event == "btn_paste_token":
 

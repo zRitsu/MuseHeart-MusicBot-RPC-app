@@ -405,12 +405,13 @@ class RpcClient:
 
             state = ""
 
-            buttons = []
+            button_dict = {}
 
             if (url := track.get("url")) and self.config["show_listen_button"]:
                 if not self.config["playlist_refs"]:
                     url = url.split("&list=")[0]
-                buttons.append({"label": self.get_lang("view_music"), "url": url.replace("www.", "")})
+
+                button_dict[self.config["button_order"].index('listen_button')] = {"label": self.get_lang("view_music"), "url": url.replace("www.", "")}
 
             state += f'{self.get_lang("author")}: {track["author"]}'
 
@@ -426,8 +427,7 @@ class RpcClient:
 
                     if (playlist_size := len(playlist_name)) > 32:
                         state += f' | {self.get_lang("playlist")}: {playlist_name}'
-                        buttons.append(
-                            {"label": self.get_lang("view_playlist"), "url": playlist_url.replace("www.", "")})
+                        button_dict[self.config["button_order"].index('playlist_button')] = {"label": self.get_lang("view_playlist"), "url": playlist_url.replace("www.", "")}
 
                     else:
 
@@ -438,7 +438,7 @@ class RpcClient:
                         else:
                             large_image_desc.append(f'{self.get_lang("playlist")}: {playlist_name}')
 
-                        buttons.append({"label": playlist_name, "url": playlist_url.replace("www.", "")})
+                        button_dict[self.config["button_order"].index('playlist_button')] = {"label": playlist_name, "url": playlist_url.replace("www.", "")}
 
                 elif playlist_name:
                     large_image_desc.append(f'{self.get_lang("playlist")}: {playlist_name}')
@@ -447,12 +447,14 @@ class RpcClient:
 
                 album_txt = f'{self.get_lang("album")}: {album_name}'
 
-                if len(buttons) < 2:
+                if len(album_txt) < 32:
+                    album_button = {"label": album_txt, "url": album_url}
+                elif len(album_name) < 32:
+                    album_button = {"label": album_name, "url": album_url}
+                else:
+                    album_button = {"label": self.get_lang("view_album"), "url": album_url}
 
-                    if len(album_name) > 32:
-                        buttons.append({"label": self.get_lang("view_album"), "url": album_url.replace("www.", "")})
-                    else:
-                        buttons.append({"label": album_txt, "url": album_url})
+                button_dict[self.config["button_order"].index('album_button')] = album_button
 
                 large_image_desc.append(album_txt)
 
@@ -478,18 +480,11 @@ class RpcClient:
 
             payload["type"] = 2
 
-            if self.config["show_listen_along_button"] and listen_along_url:
+            if self.config['show_listen_along_button'] and listen_along_url:
+                button_dict[self.config["button_order"].index('listen_along_button')] = {"label": self.get_lang("listen_along"), "url": listen_along_url}
 
-                if len(buttons) > 1:
-                    try:
-                        buttons.pop()
-                    except:
-                        pass
-
-                buttons.insert(0, {"label": self.get_lang("listen_along"), "url": listen_along_url})
-
-            if buttons:
-                payload["buttons"] = buttons
+            if button_dict:
+                payload["buttons"] = [value for key, value in sorted(button_dict.items(), key=lambda k: k)][:2]
 
         try:
 

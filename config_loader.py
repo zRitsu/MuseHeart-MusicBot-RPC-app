@@ -21,6 +21,7 @@ def read_config():
         "reconnect_timeout": 7,
         "enable_queue_text": True,
         "block_other_users_track": False,
+        "button_order": ["listen_along_button", "listen_button", "playlist_button", "album_button"],
         "token": "",
         "assets": {
             "loop": "https://i.ibb.co/5Mj4HjT/loop-track.gif",
@@ -52,6 +53,13 @@ def read_config():
 
             assets = file_config.pop("assets", {})
             sources = assets.pop("sources", {})
+
+            button_order = file_config.get("button_order", [])
+            if button_order:
+                file_config["button_order"] = [b for b in button_order if b in base_config["button_order"]]
+                file_config["button_order"].extend([i for i in base_config["button_order"] if i not in file_config["button_order"]])
+
+            file_config["button_order"] = file_config["button_order"]
 
             base_config.update(file_config)
 
