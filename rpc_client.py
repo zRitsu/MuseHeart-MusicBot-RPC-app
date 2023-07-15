@@ -421,27 +421,25 @@ class RpcClient:
             album_name = track.get("album_name")
             large_image_desc = []
 
-            if self.config["show_playlist_button"]:
+            if playlist_name and playlist_url:
 
-                if playlist_name and playlist_url:
+                playlist_translation = self.get_lang("playlist")
 
-                    if (playlist_size := len(playlist_name)) > 32:
-                        state += f' | {self.get_lang("playlist")}: {playlist_name}'
+                large_image_desc.append(playlist_name)
+
+                if self.config["show_playlist_button"]:
+
+                    if (playlist_size := (len(playlist_translation) + len(playlist_name) + 2)) > 32:
                         button_dict[self.config["button_order"].index('playlist_button')] = {"label": self.get_lang("view_playlist"), "url": playlist_url.replace("www.", "")}
 
                     else:
-
-                        if playlist_size < 23:
-                            playlist_name = f"Playlist: {playlist_name}"
-                            large_image_desc.append(playlist_name)
-
-                        else:
-                            large_image_desc.append(f'{self.get_lang("playlist")}: {playlist_name}')
+                        if (playlist_size - 32) > 0:
+                            playlist_name = f"{playlist_translation}: {playlist_name}"
 
                         button_dict[self.config["button_order"].index('playlist_button')] = {"label": playlist_name, "url": playlist_url.replace("www.", "")}
 
-                elif playlist_name:
-                    large_image_desc.append(f'{self.get_lang("playlist")}: {playlist_name}')
+            elif playlist_name:
+                large_image_desc.append(f'{self.get_lang("playlist")}: {playlist_name}')
 
             if album_url:
 
@@ -461,6 +459,12 @@ class RpcClient:
             try:
                 if track["247"]:
                     state += " | ✅24/7"
+            except KeyError:
+                pass
+
+            try:
+                if track["autoplay"]:
+                    state += f' | 🔄Autoplay'
             except KeyError:
                 pass
 
