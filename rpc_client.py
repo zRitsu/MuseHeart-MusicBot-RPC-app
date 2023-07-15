@@ -425,7 +425,7 @@ class RpcClient:
 
                 playlist_translation = self.get_lang("playlist")
 
-                large_image_desc.append(playlist_name)
+                large_image_desc.append(f"{playlist_translation}: {playlist_name}")
 
                 if self.config["show_playlist_button"]:
 
