@@ -433,7 +433,7 @@ class RpcClient:
                         button_dict[self.config["button_order"].index('playlist_button')] = {"label": self.get_lang("view_playlist"), "url": playlist_url.replace("www.", "")}
 
                     else:
-                        if (playlist_size - 32) > 0:
+                        if (32 - playlist_size) > 0:
                             playlist_name = f"{playlist_translation}: {playlist_name}"
 
                         button_dict[self.config["button_order"].index('playlist_button')] = {"label": playlist_name, "url": playlist_url.replace("www.", "")}
