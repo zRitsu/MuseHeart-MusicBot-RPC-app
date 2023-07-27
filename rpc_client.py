@@ -345,7 +345,10 @@ class RpcClient:
 
             if track["stream"]:
 
-                if track["source"] == "twitch":
+                if self.config["show_platform_icon"]:
+                    payload['assets']['small_image'] = self.config["assets"]["play"]
+                    payload['assets']['small_text'] = self.get_lang("playing")
+                elif track["source"] == "twitch":
                     payload['assets']['small_image'] = self.config["assets"]["sources"][track["source"]]
                     payload['assets']['small_text'] = "Twitch: " + self.get_lang("stream")
                 else:
@@ -389,11 +392,17 @@ class RpcClient:
                         payload['assets']['small_text'] = loop_text
 
                     else:
-                        try:
-                            payload['assets']['small_image'] = self.config["assets"]["sources"][track["source"]]
-                        except KeyError:
-                            pass
-                        payload['assets']['small_text'] = track["source"]
+
+                        if self.config["show_platform_icon"]:
+                            try:
+                                payload['assets']['small_image'] = self.config["assets"]["sources"][track["source"]]
+                            except KeyError:
+                                pass
+                            payload['assets']['small_text'] = track["source"]
+
+                        else:
+                            payload['assets']['small_image'] = self.config["assets"]["play"]
+                            payload['assets']['small_text'] = self.get_lang("playing")
 
                 else:
                     payload['timestamps']['start'] = int(time.time())
@@ -425,18 +434,23 @@ class RpcClient:
 
                 playlist_translation = self.get_lang("playlist")
 
-                large_image_desc.append(f"{playlist_translation}: {playlist_name}")
+                if self.config["show_playlist_text"]:
+
+                    large_image_desc.append(f"{playlist_translation}: {playlist_name}")
 
                 if self.config["show_playlist_button"]:
 
-                    if (playlist_size := (len(playlist_translation) + len(playlist_name) + 2)) > 32:
-                        button_dict[self.config["button_order"].index('playlist_button')] = {"label": self.get_lang("view_playlist"), "url": playlist_url.replace("www.", "")}
+                    if (playlist_name_size:=len(playlist_name)) < 33:
+
+                        if ((len(playlist_translation) + playlist_name_size + 2)) > 32:
+                            button_dict[self.config["button_order"].index('playlist_button')] = {
+                                "label": playlist_name, "url": playlist_url.replace("www.", "")}
+                        else:
+                            button_dict[self.config["button_order"].index('playlist_button')] = {
+                                "label": f"{playlist_translation}: {playlist_name}", "url": playlist_url.replace("www.", "")}
 
                     else:
-                        if (32 - playlist_size) > 0:
-                            playlist_name = f"{playlist_translation}: {playlist_name}"
-
-                        button_dict[self.config["button_order"].index('playlist_button')] = {"label": playlist_name, "url": playlist_url.replace("www.", "")}
+                        button_dict[self.config["button_order"].index('playlist_button')] = {"label": self.get_lang("view_playlist"), "url": playlist_url.replace("www.", "")}
 
             elif playlist_name:
                 large_image_desc.append(f'{self.get_lang("playlist")}: {playlist_name}')

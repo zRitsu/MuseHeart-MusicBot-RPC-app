@@ -9,7 +9,9 @@ def read_config():
         "urls_disabled": [],
         "load_all_instances": False,
         "show_listen_button": True,
+        "show_platform_icon": True,
         "show_playlist_button": True,
+        "show_playlist_text": True,
         "show_listen_along_button": False,
         "playlist_refs": True,
         "show_thumbnail": True,
@@ -27,6 +29,7 @@ def read_config():
             "loop": "https://i.ibb.co/5Mj4HjT/loop-track.gif",
             "loop_queue": "https://i.ibb.co/5Mj4HjT/loop-track.gif",
             "pause": "https://i.ibb.co/mDBMnH8/pause.png",
+            "play": "https://i.ibb.co/PtFG93j/playbutton.png",
             "stream": "https://i.ibb.co/Qf9BSQb/stream.png",
             "idle": "https://i.ibb.co/6XS6qLy/music-img.png",
             "sources": {
