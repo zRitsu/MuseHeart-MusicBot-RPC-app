@@ -440,17 +440,19 @@ class RpcClient:
 
                 if self.config["show_playlist_button"]:
 
-                    if (playlist_name_size:=len(playlist_name)) < 33:
+                    if (playlist_name_size:=len(playlist_name)) > 32:
 
-                        if ((len(playlist_translation) + playlist_name_size + 2)) > 32:
+                        button_dict[self.config["button_order"].index('playlist_button')] = {
+                            "label": self.get_lang("view_playlist"), "url": playlist_url.replace("www.", "")}
+
+                    else:
+
+                        if ((len(playlist_translation) + playlist_name_size + 2)) > 30:
                             button_dict[self.config["button_order"].index('playlist_button')] = {
                                 "label": playlist_name, "url": playlist_url.replace("www.", "")}
                         else:
                             button_dict[self.config["button_order"].index('playlist_button')] = {
                                 "label": f"{playlist_translation}: {playlist_name}", "url": playlist_url.replace("www.", "")}
-
-                    else:
-                        button_dict[self.config["button_order"].index('playlist_button')] = {"label": self.get_lang("view_playlist"), "url": playlist_url.replace("www.", "")}
 
             elif playlist_name:
                 large_image_desc.append(f'{self.get_lang("playlist")}: {playlist_name}')
