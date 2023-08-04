@@ -420,7 +420,9 @@ class RpcClient:
                 if not self.config["playlist_refs"]:
                     url = url.split("&list=")[0]
 
-                button_dict[self.config["button_order"].index('listen_button')] = {"label": self.get_lang("view_music"), "url": url.replace("www.", "")}
+                listen_text = f'{self.get_lang("listen_on")} {track["source"].capitalize()}' if (track["source"] and track['source'] not in ("http", "local")) else self.get_lang("listen_music")
+
+                button_dict[self.config["button_order"].index('listen_button')] = {"label": listen_text, "url": url.replace("www.", "")}
 
             state += f'{self.get_lang("author")}: {track["author"]}'
 
