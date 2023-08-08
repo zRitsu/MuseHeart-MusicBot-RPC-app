@@ -16,5 +16,5 @@ setup(
         'include_files': [],
         'include_msvcr': True,
     }},
-    executables = [Executable("rpc_client.py", icon=icon_file, targetName="musicbot_rpc.exe", base="Win32GUI")]
+    executables = [Executable("rpc_client.py", icon=icon_file, target_name="musicbot_rpc.exe", base="Win32GUI")]
 )
