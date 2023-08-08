@@ -30,7 +30,7 @@ langs = {
         "paused": "Em pausa",
         "listen_music": "Ouça no navegador/app",
         "listen_on": "Ouça no",
-        "listen_along": "Ouça junto no canal de voz",
+        "listen_along": "Ouvir junto no canal de voz",
         "author": "Por",
         "playlist": "Playlist",
         "view_playlist": "Visualizar Playlist",
