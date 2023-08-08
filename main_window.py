@@ -32,11 +32,12 @@ class RPCGui:
         self.window = self.get_window()
         menu = ['', ['Abrir Janela', 'Fechar App']]
         self.tray = SystemTray(menu, single_click_events=True, window=self.window, tooltip=self.appname)
-        self.hide_to_tray()
 
         if autostart > 14:
 
             if self.config["urls"]:
+
+                self.hide_to_tray()
 
                 while True:
 
