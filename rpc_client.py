@@ -463,9 +463,9 @@ class RpcClient:
 
                 album_txt = f'{self.get_lang("album")}: {album_name}'
 
-                if len(album_txt) < 32:
+                if len(album_txt) < 30:
                     album_button = {"label": album_txt, "url": album_url}
-                elif len(album_name) < 32:
+                elif len(album_name) < 30:
                     album_button = {"label": album_name, "url": album_url}
                 else:
                     album_button = {"label": self.get_lang("view_album"), "url": album_url}
