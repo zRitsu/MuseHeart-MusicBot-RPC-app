@@ -22,7 +22,6 @@ from main_window import RPCGui
 
 config = read_config()
 
-
 class MainHandler(tornado.web.RequestHandler):
     def get(self):
         self.write("O app de rich_presence está em execução!")
@@ -442,14 +441,14 @@ class RpcClient:
 
                 if self.config["show_playlist_button"]:
 
-                    if (playlist_name_size:=len(playlist_name)) > 28:
+                    if (playlist_name_size:=len(playlist_name)) > self.config["button_character_limit"]:
 
                         button_dict[self.config["button_order"].index('playlist_button')] = {
                             "label": self.get_lang("view_playlist"), "url": playlist_url.replace("www.", "")}
 
                     else:
 
-                        if ((len(playlist_translation) + playlist_name_size + 2)) > 25:
+                        if ((len(playlist_translation) + playlist_name_size + 2)) > self.config["button_character_limit"]:
                             button_dict[self.config["button_order"].index('playlist_button')] = {
                                 "label": playlist_name, "url": playlist_url.replace("www.", "")}
                         else:
@@ -463,12 +462,12 @@ class RpcClient:
 
                 album_txt = f'{self.get_lang("album")}: {album_name}'
 
-                if len(album_txt) < 30:
+                if len(album_txt) < self.config["button_character_limit"]:
                     album_button = {"label": album_txt, "url": album_url}
-                elif len(album_name) < 30:
+                elif len(album_name) < self.config["button_character_limit"]:
                     album_button = {"label": album_name, "url": album_url}
                 else:
-                    album_button = {"label": self.get_lang("view_album"), "url": album_url}
+                    album_button = {"label": (album_name[:self.config["button_character_limit"]] + ("..." if album_name[self.config["button_character_limit"]-1].isalnum() else "")) , "url": album_url}
 
                 button_dict[self.config["button_order"].index('album_button')] = album_button
 

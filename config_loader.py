@@ -24,6 +24,7 @@ def read_config():
         "enable_queue_text": True,
         "block_other_users_track": False,
         "button_order": ["listen_along_button", "listen_button", "playlist_button", "album_button"],
+        "button_character_limit": 31,
         "token": "",
         "assets": {
             "loop": "https://i.ibb.co/5Mj4HjT/loop-track.gif",
@@ -68,5 +69,8 @@ def read_config():
 
             base_config["assets"].update(assets)
             base_config["assets"]["sources"].update(sources)
+
+    if base_config["button_character_limit"] > 32:
+        base_config["button_character_limit"] = 32
 
     return base_config
