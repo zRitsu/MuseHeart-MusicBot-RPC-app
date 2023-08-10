@@ -467,7 +467,7 @@ class RpcClient:
                 elif len(album_name) < self.config["button_character_limit"]:
                     album_button = {"label": album_name, "url": album_url}
                 else:
-                    album_button = {"label": (album_name[:self.config["button_character_limit"]] + "..."), "url": album_url}
+                    album_button = {"label": (album_name[:self.config["button_character_limit"]-3] + "..."), "url": album_url}
 
                 button_dict[self.config["button_order"].index('album_button')] = album_button
 
