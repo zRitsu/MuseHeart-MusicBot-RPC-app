@@ -24,9 +24,9 @@ python3 -m pip install -r requirements.txt
 ```
 python3 rpc_client.py
 ```
-* Opcional: Caso queira compilar pra EXE você pode executar o comando abaixo (após o processo o arquivo vai estar na pasta: builds):
+* Opcional: Caso queira compilar pra EXE você pode clicar 2x no arquivo build.bat (recomendado) ou executar o comando abaixo (após o processo o arquivo vai estar na pasta: builds):
 ```
-python3 build.py build
+pyinstaller rpc_client.py
 ```
 ---
 ### Será necessário ter o link do websocket de onde o bot está rodando para add no App.
