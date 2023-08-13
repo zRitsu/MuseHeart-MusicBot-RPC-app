@@ -448,7 +448,7 @@ class RpcClient:
 
                     else:
 
-                        if ((len(playlist_translation) + playlist_name_size + 2)) > self.config["button_character_limit"]:
+                        if ((len(playlist_translation) + playlist_name_size + 2)) < self.config["button_character_limit"]:
                             button_dict[self.config["button_order"].index('playlist_button')] = {
                                 "label": playlist_name, "url": playlist_url.replace("www.", "")}
                         else:
