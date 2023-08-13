@@ -32,7 +32,7 @@ langs = {
         "listen_along": "Ouvir junto no canal de voz",
         "author": "Por",
         "playlist": "Playlist",
-        "view_playlist": "f Playlist",
+        "view_playlist": "Visualizar playlist",
         "album": "Álbum",
         "idle": ["Aguardando por", "novas músicas..."],
         "invite": "Me adicione no seu server.",
