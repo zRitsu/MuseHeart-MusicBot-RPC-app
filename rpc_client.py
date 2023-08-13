@@ -442,13 +442,12 @@ class RpcClient:
                 if self.config["show_playlist_button"]:
 
                     if (playlist_name_size:=len(playlist_name)) > self.config["button_character_limit"]:
-
                         button_dict[self.config["button_order"].index('playlist_button')] = {
                             "label": self.get_lang("view_playlist"), "url": playlist_url.replace("www.", "")}
 
                     else:
 
-                        if ((len(playlist_translation) + playlist_name_size + 2)) < self.config["button_character_limit"]:
+                        if ((len(playlist_translation) + playlist_name_size + 5)) > self.config["button_character_limit"]:
                             button_dict[self.config["button_order"].index('playlist_button')] = {
                                 "label": playlist_name, "url": playlist_url.replace("www.", "")}
                         else:
