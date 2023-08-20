@@ -119,3 +119,4 @@ config.json
 
 # test files
 rpc_test.py
+*.exe
