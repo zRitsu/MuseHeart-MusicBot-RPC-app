@@ -1,4 +1,4 @@
-# Simples App para usar Rich Presence em bots de música que usam esta [source](https://github.com/zRitsu/disnake-LL-music-bot).
+# Simples App para usar Rich Presence em bots de música que usam esta [source](https://github.com/zRitsu/MuseHeart-MusicBot).
 
 
 ### Presence Preview:
