@@ -5,3 +5,4 @@ psgtray
 tornado
 pyinstaller
 psutil
+emoji

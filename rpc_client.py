@@ -11,6 +11,7 @@ from threading import Thread
 from typing import Optional, Union
 
 import aiohttp
+import emoji
 import tornado.web
 from PySimpleGUI import PySimpleGUI as sg
 from discoIPC.ipc import DiscordIPC
@@ -441,13 +442,16 @@ class RpcClient:
 
                 if self.config["show_playlist_button"]:
 
-                    if (playlist_name_size:=len(playlist_name)) > self.config["button_character_limit"]:
+                    character_limit = self.config["button_character_limit"] if emoji.emoji_count(
+                        playlist_name) < 1 else (self.config["button_character_limit"] - 7)
+
+                    if not self.config["show_playlist_name_in_button"] or (playlist_name_size:=len(playlist_name)) > character_limit:
                         button_dict[self.config["button_order"].index('playlist_button')] = {
                             "label": self.get_lang("view_playlist"), "url": playlist_url.replace("www.", "")}
 
                     else:
 
-                        if ((len(playlist_translation) + playlist_name_size + 5)) > self.config["button_character_limit"]:
+                        if ((len(playlist_translation) + playlist_name_size + 2)) > character_limit:
                             button_dict[self.config["button_order"].index('playlist_button')] = {
                                 "label": playlist_name, "url": playlist_url.replace("www.", "")}
                         else:

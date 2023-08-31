@@ -12,6 +12,7 @@ def read_config():
         "show_platform_icon": True,
         "show_playlist_button": True,
         "show_playlist_text": True,
+        "show_playlist_name_in_button": True,
         "show_listen_along_button": False,
         "playlist_refs": True,
         "show_thumbnail": True,
