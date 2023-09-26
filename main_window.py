@@ -87,45 +87,44 @@ class RPCGui:
                      sg.InputText(default_text=self.config["dummy_app_id"], key="dummy_app_id", enable_events=True)],
                 ], expand_x=True),
             ],
+        ]
+
+        tab_rpc_buttons = [
             [
-                sg.Frame("RPC Button Settings", [
+                sg.Frame("", [
+                    [sg.Checkbox('Exibir o botão: ver/ouvir música/vídeo.',
+                                    default=self.config["show_listen_button"],
+                                    key='show_listen_button', enable_events=True)],
+                    [sg.Checkbox('Adicionar o ID da playlist na url do botão de ver/ouvir (Youtube).',
+                                    default=self.config["playlist_refs"], key='playlist_refs',
+                                    enable_events=True)],
+                    [sg.Checkbox(
+                        'Exibir o botão: Ouvir junto via Discord (Caso disponível).',
+                        default=self.config["show_listen_along_button"], key='show_listen_along_button',
+                        enable_events=True)],
+                    [sg.Checkbox('Exibir o botão: playlist (quando disponível).',
+                                    default=self.config["show_playlist_button"], key='show_playlist_button',
+                                    enable_events=True)],
+                    [sg.Checkbox('Exibir o nome da playlist no botão de visualizar playlist (quando disponível).',
+                                    default=self.config["show_playlist_name_in_button"], key='show_playlist_name_in_button',
+                                    enable_events=True)],
+                    [sg.Checkbox('Exibir botão de convite do bot (quando disponível).',
+                                    default=self.config['bot_invite'], key='bot_invite', enable_events=True)],
+                ], border_width=0),
+                sg.Frame("Prioridade de botões", [
+                    [
+                        sg.Listbox(values=self.config["button_order"], size=(17, 5), expand_x=False,
+                                    bind_return_key=True, key="button_order"),
+                    ],
                     [
                         sg.Frame("", [
-                            [sg.Checkbox('Exibir o botão: ver/ouvir música/vídeo.',
-                                         default=self.config["show_listen_button"],
-                                         key='show_listen_button', enable_events=True)],
-                            [sg.Checkbox('Adicionar o ID da playlist na url do botão de ver/ouvir (Youtube).',
-                                         default=self.config["playlist_refs"], key='playlist_refs',
-                                         enable_events=True)],
-                            [sg.Checkbox(
-                                'Exibir o botão: Ouvir junto via Discord (Caso disponível).',
-                                default=self.config["show_listen_along_button"], key='show_listen_along_button',
-                                enable_events=True)],
-                            [sg.Checkbox('Exibir o botão: playlist (quando disponível).',
-                                         default=self.config["show_playlist_button"], key='show_playlist_button',
-                                         enable_events=True)],
-                            [sg.Checkbox('Exibir o nome da playlist no botão de visualizar playlist (quando disponível).',
-                                         default=self.config["show_playlist_name_in_button"], key='show_playlist_name_in_button',
-                                         enable_events=True)],
-                            [sg.Checkbox('Exibir botão de convite do bot (quando disponível).',
-                                         default=self.config['bot_invite'], key='bot_invite', enable_events=True)],
-                        ], border_width=0),
-                        sg.Frame("Prioridade de botões", [
                             [
-                                sg.Listbox(values=self.config["button_order"], size=(17, 5), expand_x=False,
-                                           bind_return_key=True, key="button_order"),
+                                sg.Button("Up", key="btn_up_button_order", enable_events=True, expand_x=True),
+                                sg.Button("Down", key="btn_down_button_order", enable_events=True, expand_x=True)
                             ],
-                            [
-                                sg.Frame("", [
-                                    [
-                                        sg.Button("Up", key="btn_up_button_order", enable_events=True, expand_x=True),
-                                        sg.Button("Down", key="btn_down_button_order", enable_events=True, expand_x=True)
-                                    ],
-                                ], border_width=0, expand_x=True)
-                            ]
-                        ])
+                        ], border_width=0, expand_x=True)
                     ]
-                ], expand_x=True),
+                ])
             ],
         ]
 
@@ -183,14 +182,56 @@ class RPCGui:
             ]
         ]
 
+        tab_blacklists = [
+            [
+                sg.Frame("", [
+                    [
+                        sg.Frame("Track title blacklist", [
+                            [
+                                sg.Frame("", [
+                                    [sg.InputText(default_text=self.config["track_blacklist"], key="track_blacklist", expand_x=True,
+                                                enable_events=True)],
+                                ], border_width=0, expand_x=True)
+                            ]
+                        ], expand_x=True),
+                    ],
+                    [
+                        sg.Frame("Uploader/Author blacklist", [
+                            [
+                                sg.Frame("", [
+                                    [sg.InputText(default_text=self.config["uploader_blacklist"], key="uploader_blacklist", expand_x=True,
+                                                enable_events=True)],
+                                ], border_width=0, expand_x=True)
+                            ]
+                        ], expand_x=True),
+                    ],
+                    [
+                        sg.Frame("Playlist name blacklist", [
+                            [
+                                sg.Frame("", [
+                                    [sg.InputText(default_text=self.config["playlist_blacklist"], key="playlist_blacklist", expand_x=True,
+                                                enable_events=True)],
+                                ], border_width=0, expand_x=True)
+                            ]
+                        ], expand_x=True),
+                    ],
+                    [
+                        sg.Text(text="Nota: Para múltiplas palavras separe com ||")
+                    ],
+                ], expand_x=True)
+            ]
+        ]
+
         tabgroup = [
             [
                 sg.TabGroup(
                     [
                         [
-                            sg.Tab('Main Settings', tab_config, element_justification='center'),
+                            sg.Tab('Main RPC Settings', tab_config, element_justification='center'),
+                            sg.Tab('RPC buttons Settings', tab_rpc_buttons),
                             sg.Tab('Socket Settings', tab_urls, key="sockets_url"),
                             sg.Tab('Assets', tab_assets, element_justification='center'),
+                            sg.Tab('Blacklists', tab_blacklists, element_justification='center'),
                         ]
                     ], key="main_tab"
                 ),
@@ -224,7 +265,8 @@ class RPCGui:
         if not self.ready:
             time.sleep(2)
         if exception:
-            sg.popup_error(f'Ocorreu um erro!', exception, traceback.format_exc())
+            exc = traceback.format_exc()
+            text = f"{text}\n{exc}"
             log_type = "error"
 
         if log_type == "warning":
@@ -319,7 +361,10 @@ class RPCGui:
 
             elif event == "btn_up_button_order":
 
-                index = self.config["button_order"].index(values["button_order"][0])
+                try:
+                    index = self.config["button_order"].index(values["button_order"][0])
+                except:
+                    continue
 
                 if index == 0:
                     continue
@@ -333,7 +378,10 @@ class RPCGui:
 
             elif event == "btn_down_button_order":
 
-                index = self.config["button_order"].index(values["button_order"][0])
+                try:
+                    index = self.config["button_order"].index(values["button_order"][0])
+                except:
+                    continue
 
                 if index == len(self.config["button_order"])-1:
                     continue

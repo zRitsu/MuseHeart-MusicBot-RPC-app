@@ -26,6 +26,9 @@ def read_config():
         "block_other_users_track": False,
         "button_order": ["listen_along_button", "listen_button", "playlist_button", "album_button"],
         "button_character_limit": 31,
+        "track_blacklist": "",
+        "uploader_blacklist": "",
+        "playlist_blacklist": "",
         "token": "",
         "assets": {
             "loop": "https://i.ibb.co/5Mj4HjT/loop-track.gif",

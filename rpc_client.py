@@ -338,6 +338,37 @@ class RpcClient:
 
         if track:
 
+            playlist_name = track.get("playlist_name")
+
+            clear_presence = False
+
+            blacklist = self.config["track_blacklist"].lower().split("||")
+
+            if blacklist:
+                for word in track["title"].lower().split():
+                    for blacklistword in blacklist:
+                        if word in blacklistword:
+                            clear_presence = True
+
+                if not clear_presence:
+                    blacklist = self.config["uploader_blacklist"].lower().split("||")
+
+                    for word in track["author"].lower().split():
+                        for blacklistword in blacklist:
+                            if word in blacklistword:
+                                clear_presence = True
+
+                if not clear_presence and playlist_name:
+                    blacklist = self.config["playlist_blacklist"].lower().split("||")
+                    for word in playlist_name.lower().split():
+                        for blacklistword in blacklist:
+                            if word in blacklistword:
+                                clear_presence = True
+
+            if clear_presence:
+                self.users_rpc[user_id][bot_id].clear()
+                return
+
             if self.config["show_thumbnail"] and track["thumb"]:
                 payload["assets"]["large_image"] = track["thumb"].replace("mqdefault", "default")
 
@@ -427,7 +458,6 @@ class RpcClient:
             state += f'{self.get_lang("author")}: {track["author"]}'
 
             playlist_url = track.get("playlist_url")
-            playlist_name = track.get("playlist_name")
             album_url = track.get("album_url")
             album_name = track.get("album_name")
             large_image_desc = []
@@ -512,7 +542,7 @@ class RpcClient:
 
         try:
 
-            if self.config["block_other_users_track"] and track and track["requester_id"] != user_id:
+            if track and not track.get('autoplay') and (self.config["block_other_users_track"] and track["requester_id"] != user_id):
                 self.users_rpc[user_id][bot_id].clear()
             else:
                 self.users_rpc[user_id][bot_id].update_activity(payload)
@@ -595,7 +625,7 @@ class RpcClient:
             txt = self.langs["en-us"].get(key)
         return txt
 
-    async def clear_users_presences(self, uri: str):
+    def clear_users_presences(self, uri: str):
 
         for bot_id in self.bots_socket[uri]:
             for user_id in self.users_socket[uri]:
@@ -714,7 +744,7 @@ class RpcClient:
                                 except KeyError:
                                     pass
 
-                                self.process_data(user_ws, bot_id, data)
+                                self.process_data(user_ws, bot_id, data, url=uri)
 
                             elif msg.type in (aiohttp.WSMsgType.CLOSED,
                                               aiohttp.WSMsgType.CLOSING,
@@ -725,7 +755,7 @@ class RpcClient:
 
                             elif msg.type == aiohttp.WSMsgType.ERROR:
 
-                                await self.clear_users_presences(uri)
+                                self.clear_users_presences(uri)
 
                                 if self.closing:
                                     return
@@ -755,7 +785,7 @@ class RpcClient:
                         f"{time_format(self.config['reconnect_timeout']*1000)}...",
                         log_type="warning"
                     )
-                    await self.clear_users_presences(uri)
+                    self.clear_users_presences(uri)
                     await asyncio.sleep(self.config['reconnect_timeout'])
 
             except (aiohttp.WSServerHandshakeError, aiohttp.ClientConnectorError):
@@ -773,7 +803,7 @@ class RpcClient:
 
                 traceback.print_exc()
                 self.gui.update_log(f"Erro na conexão: {uri} | {repr(e)}", tooltip=True, log_type="error")
-                await self.clear_users_presences(uri)
+                self.clear_users_presences(uri)
                 await asyncio.sleep(60)
 
     async def create_session(self):
