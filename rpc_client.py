@@ -202,7 +202,7 @@ class RpcClient:
                 continue
 
             user_id_ = rpc.data['data']['user']['id']
-            user = f"{rpc.data['data']['user']['username']}#{rpc.data['data']['user']['discriminator']}"
+            user = f"{rpc.data['data']['user']['username']}"
             user_clients[int(user_id_)] = {"pipe": i, "user": user}
             rpc.user = user
             self.gui.update_log(f"RPC conectado: {user} [{user_id_}] pipe: {i}")
