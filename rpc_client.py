@@ -376,10 +376,7 @@ class RpcClient:
 
             if track["stream"]:
 
-                if self.config["show_platform_icon"]:
-                    payload['assets']['small_image'] = self.config["assets"]["play"]
-                    payload['assets']['small_text'] = self.get_lang("playing")
-                elif track["source"] == "twitch":
+                if track["source"] == "twitch" and self.config["show_platform_icon"]:
                     payload['assets']['small_image'] = self.config["assets"]["sources"][track["source"]]
                     payload['assets']['small_text'] = "Twitch: " + self.get_lang("stream")
                 else:
