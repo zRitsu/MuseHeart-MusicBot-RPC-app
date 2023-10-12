@@ -433,7 +433,7 @@ class RpcClient:
                             payload['assets']['small_text'] = self.get_lang("playing")
 
                 else:
-                    payload['timestamps']['start'] = int(time.time())
+                    payload['timestamps']['start'] = track['duration']
 
             else:
 
