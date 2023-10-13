@@ -272,7 +272,7 @@ class RPCGui:
         if log_type == "warning":
             self.window[MLINE_KEY].update(text + "\n", text_color_for_value='yellow', append=True)
         elif log_type == "error":
-            self.tray.show_message(self.appname, f'Erro: {text}.')
+            self.tray.show_message(self.appname, f'Erro: {repr(exception)}.')
             self.window[MLINE_KEY].update(text + "\n", text_color_for_value='red', append=True)
         elif log_type == "info":
             self.window[MLINE_KEY].update(text + "\n", text_color_for_value='cyan', append=True)
