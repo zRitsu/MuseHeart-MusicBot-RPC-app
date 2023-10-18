@@ -7,8 +7,11 @@ from tkinter import TclError
 from typing import TYPE_CHECKING, Literal
 
 from PySimpleGUI import PySimpleGUI as sg
-from psgtray import SystemTray
 from app_version import version
+try:
+    from psgtray import SystemTray
+except:
+    SystemTray = None
 
 if TYPE_CHECKING:
     from rpc_client import RpcClient
@@ -31,7 +34,7 @@ class RPCGui:
 
         self.window = self.get_window()
         menu = ['', ['Abrir Janela', 'Fechar App']]
-        self.tray = SystemTray(menu, single_click_events=True, window=self.window, tooltip=self.appname)
+        self.tray = None if not SystemTray else SystemTray(menu, single_click_events=True, window=self.window, tooltip=self.appname)
 
         if autostart > 14:
 
@@ -272,14 +275,15 @@ class RPCGui:
         if log_type == "warning":
             self.window[MLINE_KEY].update(text + "\n", text_color_for_value='yellow', append=True)
         elif log_type == "error":
-            self.tray.show_message(self.appname, f'Erro: {repr(exception)}.')
+            if self.tray:
+                self.tray.show_message(self.appname, f'Erro: {repr(exception)}.')
             self.window[MLINE_KEY].update(text + "\n", text_color_for_value='red', append=True)
         elif log_type == "info":
             self.window[MLINE_KEY].update(text + "\n", text_color_for_value='cyan', append=True)
         else:
             self.window[MLINE_KEY].update(text + "\n", text_color_for_value='green2', append=True)
 
-        if tooltip and self.tray.tray_icon.visible:
+        if tooltip and self.tray and self.tray.tray_icon.visible:
             self.tray.show_message()
 
         self.ready = True
@@ -334,18 +338,21 @@ class RPCGui:
                 self.client.exit()
                 break
 
-            elif event == self.tray.key:
+            elif self.tray and event == self.tray.key:
 
                 if values[event] in ("Abrir Janela", sg.EVENT_SYSTEM_TRAY_ICON_DOUBLE_CLICKED,
                                      sg.EVENT_SYSTEM_TRAY_ICON_ACTIVATED):
                     self.show_window()
 
                 elif values[event] == "Fechar App":
-                    self.tray.hide_icon()
+                    if self.tray:
+                        self.tray.hide_icon()
                     self.client.exit()
                     break
 
             elif event == "tray":
+                if not self.tray:
+                    continue
                 self.hide_to_tray()
                 self.tray.show_message(self.appname, 'Executando em segundo plano.')
 
@@ -354,7 +361,8 @@ class RPCGui:
                 self.update_data()
                 self.window.close()
                 self.window = self.get_window()
-                self.tray.window = self.window
+                if self.tray:
+                    self.tray.window = self.window
 
             elif event == "clear_log":
                 self.window[MLINE_KEY].update("Log limpo com sucesso!\n", text_color_for_value='green2')
