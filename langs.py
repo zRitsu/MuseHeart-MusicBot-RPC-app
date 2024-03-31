@@ -11,6 +11,8 @@ langs = {
         "listen_music": "Listen (Browser/App)",
         "listen_on": "Listen on",
         "listen_along": "Listen along (Voice Channel)",
+        "recommended": "Recommended",
+        "server": "Server",
         "author": "By",
         "playlist": "Playlist",
         "view_playlist": "View Playlist",
@@ -23,13 +25,15 @@ langs = {
     "pt-br": {
         "stream": "Ao vivo",
         "loop_text": "Repetição ativada",
-        "loop_queue": "Repetição da fila: ativada",
+        "loop_queue": "Repetição: Lista",
         "loop_remaining": "Repetições restantes",
         "playing": "Tocando",
         "paused": "Em pausa",
         "listen_music": "Ouvir no navegador/app",
         "listen_on": "Ouvir no",
         "listen_along": "Ouvir junto no canal de voz",
+        "recommended": "Recomendada",
+        "server": "Servidor",
         "author": "Por",
         "playlist": "Playlist",
         "view_playlist": "Visualizar playlist",
@@ -37,6 +41,6 @@ langs = {
         "idle": ["Aguardando por", "novas músicas..."],
         "invite": "Me adicione no seu servidor",
         "support_server": "Servidor de Suporte",
-        "queue": "Na fila: {queue}",
+        "queue": "Na lista: {queue}",
     }
 }

@@ -5,6 +5,7 @@ import json
 import os
 import pprint
 import sys
+import tempfile
 import time
 import traceback
 from threading import Thread
@@ -90,6 +91,25 @@ class MyDiscordIPC(DiscordIPC):
             self.last_data.clear()
             raise e
 
+    def _get_ipc_path(self, id=0):
+        # credits: pypresence https://github.com/qwertyquerty/pypresence/blob/31718fb442e563f879160c16e0215c7c1fa16f23/pypresence/utils.py#L25
+        ipc = f"discord-ipc-{id}"
+
+        if sys.platform in ('linux', 'darwin'):
+            tempdir = (os.environ.get('XDG_RUNTIME_DIR') or tempfile.gettempdir())
+            paths = ['.', 'snap.discord', 'app/com.discordapp.Discord', 'app/com.discordapp.DiscordCanary']
+        elif sys.platform == 'win32':
+            tempdir = r'\\?\pipe'
+            paths = ['.']
+        else:
+            return
+
+        for path in paths:
+            full_path = os.path.abspath(os.path.join(tempdir, path))
+            if sys.platform == 'win32' or os.path.isdir(full_path):
+                for entry in os.scandir(full_path):
+                    if entry.name.startswith(ipc) and os.path.exists(entry):
+                        return entry.path
 
 class IPCError(Exception):
 
@@ -300,16 +320,16 @@ class RpcClient:
 
     def update(self, user_id: int, bot_id: int, data: dict, refresh_timestamp=True):
 
-        data = dict(data)
+        current_data = dict(data)
 
         try:
-            data.pop("op")
+            current_data.pop("op")
         except:
             pass
 
         self.check_presence(user_id, bot_id)
 
-        if not data:
+        if not current_data:
             try:
                 self.users_rpc[user_id][bot_id].clear()
             except:
@@ -323,15 +343,16 @@ class RpcClient:
             "timestamps": {}
         }
 
-        track = data.pop("track", None)
-        thumb = data.pop("thumb", None)
-        listen_along_url = data.pop("listen_along_invite", None)
+        track = current_data.pop("track", None)
+        thumb = current_data.pop("thumb", None)
+        guild = current_data.pop("guild", "")
+        listen_along_url = current_data.pop("listen_along_invite", None)
 
-        for d in dict(data):
+        for d in dict(current_data):
             if d not in valid_presence_fields:
-                del data[d]
+                del current_data[d]
 
-        payload.update(data)
+        payload.update(current_data)
 
         if not payload["assets"].get("large_image"):
             payload["assets"]["large_image"] = thumb
@@ -343,6 +364,8 @@ class RpcClient:
             clear_presence = False
 
             blacklist = self.config["track_blacklist"].lower().split("||")
+
+            loop_queue_txt = ""
 
             if blacklist:
                 for word in track["title"].lower().split():
@@ -374,18 +397,22 @@ class RpcClient:
 
             payload['details'] = track["title"]
 
-            if track["stream"]:
-
-                if track["source"] == "twitch" and self.config["show_platform_icon"]:
-                    payload['assets']['small_image'] = self.config["assets"]["sources"][track["source"]]
-                    payload['assets']['small_text'] = "Twitch: " + self.get_lang("stream")
-                else:
-                    payload['assets']['small_image'] = self.config["assets"]["stream"]
-                    payload['assets']['small_text'] = self.get_lang("stream")
+            show_platform_icon = False
 
             if not track["paused"]:
 
-                if not track["stream"]:
+                if track["stream"]:
+
+                    if track["source"] == "twitch" and self.config["show_platform_icon"]:
+                        payload['assets']['small_image'] = self.config["assets"]["sources"][track["source"]]
+                        payload['assets']['small_text'] = "Twitch: " + self.get_lang("stream")
+                    else:
+                        payload['assets']['small_image'] = self.config["assets"]["stream"]
+                        payload['assets']['small_text'] = self.get_lang("stream")
+
+                    payload['timestamps']['start'] = track['duration']
+
+                else:
                     startTime = datetime.datetime.now(datetime.timezone.utc)
 
                     endtime = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(
@@ -395,16 +422,20 @@ class RpcClient:
                         payload['timestamps']['end'] = int(endtime.timestamp())
                         payload['timestamps']['start'] = int(startTime.timestamp())
                     else:
-                        payload['timestamps']['end'] = self.users_rpc[user_id][bot_id].last_data['timestamps']['end']
-                        payload['timestamps']['start'] = self.users_rpc[user_id][bot_id].last_data['timestamps']['start']
+                        try:
+                            payload['timestamps']['end'] = self.users_rpc[user_id][bot_id].last_data['timestamps']['end']
+                            payload['timestamps']['start'] = self.users_rpc[user_id][bot_id].last_data['timestamps']['start']
+                        except KeyError:
+                            payload['timestamps']['end'] = int(endtime.timestamp())
+                            payload['timestamps']['start'] = int(startTime.timestamp())
 
                     player_loop = track.get('loop')
 
                     if player_loop:
 
                         if player_loop == "queue":
-                            loop_text = self.get_lang('loop_queue')
-                            payload['assets']['small_image'] = self.config["assets"]["loop_queue"]
+                            loop_queue_txt = self.get_lang('loop_queue')
+                            show_platform_icon = True
 
                         else:
 
@@ -417,9 +448,11 @@ class RpcClient:
 
                             payload['assets']['small_image'] = self.config["assets"]["loop"]
 
-                        payload['assets']['small_text'] = loop_text
-
+                            payload['assets']['small_text'] = loop_text
                     else:
+                        show_platform_icon = True
+
+                    if show_platform_icon:
 
                         if self.config["show_platform_icon"]:
                             try:
@@ -431,9 +464,7 @@ class RpcClient:
                         else:
                             payload['assets']['small_image'] = self.config["assets"]["play"]
                             payload['assets']['small_text'] = self.get_lang("playing")
-
-                else:
-                    payload['timestamps']['start'] = track['duration']
+                            show_platform_icon = False
 
             else:
 
@@ -448,7 +479,10 @@ class RpcClient:
                 if not self.config["playlist_refs"]:
                     url = url.split("&list=")[0]
 
-                listen_text = f'{self.get_lang("listen_on")} {track["source"].capitalize()}' if (track["source"] and track['source'] not in ("http", "local")) else self.get_lang("listen_music")
+                if show_platform_icon:
+                    listen_text = f'{self.get_lang("listen_on")} {track["source"].capitalize()}' if (track["source"] and track['source'] not in ("http", "local")) else self.get_lang("listen_music")
+                else:
+                    listen_text = f'{self.get_lang("listen_music")}'
 
                 button_dict[self.config["button_order"].index('listen_button')] = {"label": listen_text, "url": url.replace("www.", "")}
 
@@ -459,34 +493,37 @@ class RpcClient:
             album_name = track.get("album_name")
             large_image_desc = []
 
+            playlist_txt = ""
+            playlist_index = 0
+
             if playlist_name and playlist_url:
 
                 playlist_translation = self.get_lang("playlist")
 
                 if self.config["show_playlist_text"]:
 
-                    large_image_desc.append(f"{playlist_translation}: {playlist_name}")
+                    playlist_txt = f"{playlist_translation}: {playlist_name}"
+                    large_image_desc.append(playlist_txt)
 
                 if self.config["show_playlist_button"]:
+
+                    playlist_index = self.config["button_order"].index('playlist_button')
 
                     character_limit = self.config["button_character_limit"] if emoji.emoji_count(
                         playlist_name) < 1 else (self.config["button_character_limit"] - 7)
 
                     if not self.config["show_playlist_name_in_button"] or (playlist_name_size:=len(playlist_name)) > character_limit:
-                        button_dict[self.config["button_order"].index('playlist_button')] = {
+                        button_dict[playlist_index] = {
                             "label": self.get_lang("view_playlist"), "url": playlist_url.replace("www.", "")}
 
                     else:
 
                         if ((len(playlist_translation) + playlist_name_size + 2)) > character_limit:
-                            button_dict[self.config["button_order"].index('playlist_button')] = {
+                            button_dict[playlist_index] = {
                                 "label": playlist_name, "url": playlist_url.replace("www.", "")}
                         else:
-                            button_dict[self.config["button_order"].index('playlist_button')] = {
+                            button_dict[playlist_index] = {
                                 "label": f"{playlist_translation}: {playlist_name}", "url": playlist_url.replace("www.", "")}
-
-            elif playlist_name:
-                large_image_desc.append(f'{self.get_lang("playlist")}: {playlist_name}')
 
             if album_url:
 
@@ -504,38 +541,48 @@ class RpcClient:
                 large_image_desc.append(album_txt)
 
             try:
-                if track["247"]:
-                    state += " | ✅24/7"
+                if track["autoplay"]:
+                    state += f" | 👍{self.get_lang('recommended')}"
             except KeyError:
                 pass
 
             try:
-                if track["autoplay"]:
-                    state += f' | 🔄Autoplay'
+                if track["247"]:
+                    state += " | ⏰24/7"
             except KeyError:
                 pass
+
+            if guild:
+                state += f" | 🌐{self.get_lang('server')}: {guild}"
 
             try:
                 if track["queue"] and self.config["enable_queue_text"]:
-                    state += f' | {self.get_lang("queue").replace("{queue}", str(track["queue"]))}'
+                    state += f' | 🎶{self.get_lang("queue").replace("{queue}", str(track["queue"]))}'
             except KeyError:
                 pass
 
-            if not state:
-                state = "   "
-
-            payload['state'] = state
-
             if large_image_desc:
                 payload['assets']['large_text'] = " | ".join(large_image_desc)
-
-            payload["type"] = 2
 
             if self.config['show_listen_along_button'] and listen_along_url:
                 button_dict[self.config["button_order"].index('listen_along_button')] = {"label": self.get_lang("listen_along"), "url": listen_along_url}
 
             if button_dict:
-                payload["buttons"] = [value for key, value in sorted(button_dict.items(), key=lambda k: k)][:2]
+
+                button_dict = {key: value for key, value in sorted(button_dict.items(), key=lambda k: k)[:2]}
+
+                if playlist_index not in button_dict and playlist_txt:
+                    state += f" | {playlist_txt}"
+
+                payload["buttons"] = [v for v in button_dict.values()]
+
+            if loop_queue_txt:
+                state += f" | 🔄{loop_queue_txt}"
+
+            if not state:
+                payload['state'] = "   "
+            else:
+                payload['state'] = state[:128]
 
         try:
 
@@ -558,10 +605,11 @@ class RpcClient:
                     rpc.connect()
                     self.users_rpc[user_id][bot_id] = rpc
                     user_clients[user_id]["pipe"] = i
-                    self.gui.update_log(f"RPC reconectado ao discord: {user_clients[user_id]['user']} | pipe: {i}")
                     self.update(user_id, bot_id, data, refresh_timestamp=refresh_timestamp)
+                    self.gui.update_log(f"RPC reconectado ao discord: {user_clients[user_id]['user']} | pipe: {i}")
                     return
-                except:
+                except Exception:
+                    traceback.print_exc()
                     continue
 
             del self.users_rpc[user_id]
