@@ -479,7 +479,7 @@ class RpcClient:
                 if not self.config["playlist_refs"]:
                     url = url.split("&list=")[0]
 
-                if show_platform_icon:
+                if self.config["show_platform_icon"]:
                     listen_text = f'{self.get_lang("listen_on")} {track["source"].capitalize()}' if (track["source"] and track['source'] not in ("http", "local")) else self.get_lang("listen_music")
                 else:
                     listen_text = f'{self.get_lang("listen_music")}'
