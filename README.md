@@ -2,7 +2,7 @@
 
 
 ### Presence Preview:
-[![](https://i.ibb.co/7kFNFB8/image.png)](https://i.ibb.co/7kFNFB8/image.png)
+[![](https://i.ibb.co/6tVbfFH/image.png)](https://i.ibb.co/6tVbfFH/image.png)
 
 ### App Preview:
 [![](https://i.ibb.co/q5ZrrRv/image.png)](https://i.ibb.co/q5ZrrRv/image.png)
