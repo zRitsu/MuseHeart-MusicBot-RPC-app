@@ -2,10 +2,10 @@
 
 
 ### Presence Preview:
-![](https://cdn.discordapp.com/attachments/554468640942981147/1087128133095915583/rpc_preview.png)
+![](https://i.ibb.co/7kFNFB8/image.png)
 
 ### App Preview:
-![](https://cdn.discordapp.com/attachments/554468640942981147/1087135148761428028/image.png)
+![](https://i.ibb.co/q5ZrrRv/image.png)
 
 ## Para usar o app você pode usar um dos seguintes métodos abaixo:
 
@@ -37,7 +37,7 @@ ws://localhost/ws
 ```
 * Se seu bot tiver hospedado em algum serviço que forneça acesso http (ex: Repl.it, Heroku etc) o link do app será exibido na página renderizada:
 
-![](https://cdn.discordapp.com/attachments/554468640942981147/1087148423767130112/image.png)
+![](https://i.ibb.co/n80PT0L/image.png)
 
 * Adicione o link do websocket na aba Socket Settings.
 
