@@ -38,7 +38,7 @@ def read_config():
             "stream": "https://i.ibb.co/Qf9BSQb/stream.png",
             "idle": "https://i.ibb.co/6XS6qLy/music-img.png",
             "sources": {
-                "deezer": "https://i.ibb.co/zxpBbp8/deezer.png",
+                "deezer": "https://i.ibb.co/Wz7kJYy/deezer.png",
                 "soundcloud": "https://i.ibb.co/CV6NB6w/soundcloud.png",
                 "spotify": "https://i.ibb.co/3SWMXj8/spotify.png",
                 "youtube": "https://i.ibb.co/LvX7dQL/yt.png",
