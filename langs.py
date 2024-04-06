@@ -18,7 +18,7 @@ langs = {
         "view_playlist": "View Playlist",
         "album": "Album",
         "idle": ["Idling...", "   "],
-        "invite": "Invite",
+        "invite": "Add Bot",
         "support_server": "Support Server",
         "queue": "Queue: {queue}",
     },
