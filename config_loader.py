@@ -29,6 +29,7 @@ def read_config():
         "track_blacklist": "",
         "uploader_blacklist": "",
         "playlist_blacklist": "",
+        "show_guild_name": True,
         "token": "",
         "assets": {
             "loop": "https://i.ibb.co/5Mj4HjT/loop-track.gif",

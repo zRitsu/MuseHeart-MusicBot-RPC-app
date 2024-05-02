@@ -552,7 +552,7 @@ class RpcClient:
             except KeyError:
                 pass
 
-            if guild:
+            if guild and self.config['show_guild_name']:
                 state += f" | 🌐{self.get_lang('server')}: {guild}"
 
             try:
