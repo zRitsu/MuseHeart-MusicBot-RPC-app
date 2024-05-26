@@ -541,10 +541,26 @@ class RpcClient:
 
                 large_image_desc.append(album_txt)
 
-            if track["source"] != "lastfm":
+            if not track["stream"] and track["source"] not in ("lastfm", "youtube", "http", "local", "twitch"):
+
+                if track["source"] == "youtube":
+                    if track["author"].endswith(" - topic") and not track["author"].endswith(
+                            "Release - topic") and not track["title"].startswith(track['author'][:-8]):
+                        title = track["title"]
+                        author = track["author"][:-8]
+                    else:
+                        try:
+                            author, title = track["title"].split(" - ", maxsplit=1)
+                        except ValueError:
+                            title = track["title"]
+                            author = track["author"]
+                else:
+                    title = track["title"]
+                    author = track["author"]
+
                 button_dict[self.config["button_order"].index('open_lastfm')] = {
                     "label": f"{self.get_lang('listen_on')} Last.FM",
-                    "url": f"https://www.last.fm/music/{quote(track['author'].split(',')[0])}/_/{quote(track['title'])}"
+                    "url": f"https://www.last.fm/music/{quote(author.split(',')[0])}/_/{quote(title)}"
                 }
 
             try:
