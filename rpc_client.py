@@ -541,7 +541,7 @@ class RpcClient:
 
                 large_image_desc.append(album_txt)
 
-            if not track["stream"] and track["source"] not in ("lastfm", "youtube", "http", "local", "twitch"):
+            if not track["stream"] and track["source"] not in ("lastfm", "http", "local"):
 
                 if track["source"] == "youtube":
                     if track["author"].endswith(" - topic") and not track["author"].endswith(
