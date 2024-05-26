@@ -24,7 +24,7 @@ def read_config():
         "reconnect_timeout": 7,
         "enable_queue_text": True,
         "block_other_users_track": False,
-        "button_order": ["listen_along_button", "listen_button", "playlist_button", "album_button"],
+        "button_order": ["listen_along_button", "listen_button", "playlist_button", "album_button", "open_lastfm"],
         "button_character_limit": 31,
         "track_blacklist": "",
         "uploader_blacklist": "",

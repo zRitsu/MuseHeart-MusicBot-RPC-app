@@ -10,6 +10,7 @@ import time
 import traceback
 from threading import Thread
 from typing import Optional, Union
+from urllib.parse import quote
 
 import aiohttp
 import emoji
@@ -539,6 +540,12 @@ class RpcClient:
                 button_dict[self.config["button_order"].index('album_button')] = album_button
 
                 large_image_desc.append(album_txt)
+
+            if track["source"] != "lastfm":
+                button_dict[self.config["button_order"].index('open_lastfm')] = {
+                    "label": f"{self.get_lang('listen_on')} Last.FM",
+                    "url": f"https://www.last.fm/music/{quote(track['author'].split(',')[0])}/_/{quote(track['title'])}"
+                }
 
             try:
                 if track["autoplay"]:
