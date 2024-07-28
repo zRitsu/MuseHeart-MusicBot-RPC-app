@@ -6,5 +6,6 @@ if not exist venv (
   call "venv\scripts\activate"
 )
 
-pyinstaller -F -i icon.ico -c --noconsole rpc_client.py
+::pyinstaller -F -i icon.ico -c --noconsole rpc_client.py
+pyinstaller -F -i icon.ico -c rpc_client.py
 pause

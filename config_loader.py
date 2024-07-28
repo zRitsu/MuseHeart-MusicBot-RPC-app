@@ -24,7 +24,7 @@ def read_config():
         "reconnect_timeout": 7,
         "enable_queue_text": True,
         "block_other_users_track": False,
-        "button_order": ["listen_along_button", "listen_button", "playlist_button", "album_button", "open_lastfm"],
+        "button_order": ["listen_along_button", "listen_button", "playlist_button", "album_button", "open_lastfm", "lastfm_profile"],
         "button_character_limit": 31,
         "track_blacklist": "",
         "uploader_blacklist": "",
@@ -47,6 +47,7 @@ def read_config():
                 "twitch": "https://cdn3.iconfinder.com/data/icons/popular-services-brands-vol-2/512/twitch-512.png",
                 "jiosaavn": "https://i.ibb.co/Bfh8dW2/jiosaavn.png",
                 "tidal": "https://i.ibb.co/JkBbrXh/tidal.png",
+                "youtubemusic": "https://i.ibb.co/WtCC2pg/Youtube-music-icon.png",
             }
         }
     }

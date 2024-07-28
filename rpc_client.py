@@ -53,6 +53,10 @@ def time_format(milliseconds: Union[int, float]) -> str:
 
     return strings
 
+track_source_replaces = {
+    "applemusic": "Apple Music",
+    "youtubemusic": "Youtube Music",
+}
 
 class MyDiscordIPC(DiscordIPC):
 
@@ -465,7 +469,6 @@ class RpcClient:
                         else:
                             payload['assets']['small_image'] = self.config["assets"]["play"]
                             payload['assets']['small_text'] = self.get_lang("playing")
-                            show_platform_icon = False
 
             else:
 
@@ -590,6 +593,9 @@ class RpcClient:
             if self.config['show_listen_along_button'] and listen_along_url:
                 button_dict[self.config["button_order"].index('listen_along_button')] = {"label": self.get_lang("listen_along"), "url": listen_along_url}
 
+            if lastfm_user:=data.get("lastfm_user"):
+                button_dict[self.config["button_order"].index('lastfm_profile')] = {"label": f"Last.fm: {lastfm_user[:20]}", "url": f"https://www.last.fm/user/{lastfm_user}"}
+
             if button_dict:
 
                 button_dict = {key: value for key, value in sorted(button_dict.items(), key=lambda k: k)[:2]}
@@ -676,9 +682,11 @@ class RpcClient:
             if support_server:
                 buttons.append({"label": self.get_lang("support_server"), "url": support_server})
 
+        if len(buttons) < 2 and (lastfm_user := data.get("lastfm_user")):
+            buttons.append({"label": f"Last.fm: {lastfm_user[:20]}", "url": f"https://www.last.fm/user/{lastfm_user}"})
+
         if buttons:
             payload["buttons"] = buttons
-
 
         return payload
 
