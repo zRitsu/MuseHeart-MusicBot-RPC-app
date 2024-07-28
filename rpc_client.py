@@ -345,7 +345,8 @@ class RpcClient:
             "assets": {
                 "small_image": "https://i.ibb.co/qD5gvKR/cd.gif"
             },
-            "timestamps": {}
+            "timestamps": {},
+            "type": 2,
         }
 
         track = current_data.pop("track", None)
@@ -484,7 +485,7 @@ class RpcClient:
                     url = url.split("&list=")[0]
 
                 if self.config["show_platform_icon"]:
-                    listen_text = f'{self.get_lang("listen_on")} {track["source"].capitalize()}' if (track["source"] and track['source'] not in ("http", "local")) else self.get_lang("listen_music")
+                    listen_text = f'{self.get_lang("listen_on")} {track_source_replaces.get(track["source"], track["source"].capitalize())}' if (track["source"] and track['source'] not in ("http", "local")) else self.get_lang("listen_music")
                 else:
                     listen_text = f'{self.get_lang("listen_music")}'
 
@@ -497,17 +498,9 @@ class RpcClient:
             album_name = track.get("album_name")
             large_image_desc = []
 
-            playlist_txt = ""
-            playlist_index = 0
-
             if playlist_name and playlist_url:
 
                 playlist_translation = self.get_lang("playlist")
-
-                if self.config["show_playlist_text"]:
-
-                    playlist_txt = f"{playlist_translation}: {playlist_name}"
-                    large_image_desc.append(playlist_txt)
 
                 if self.config["show_playlist_button"]:
 
@@ -529,6 +522,10 @@ class RpcClient:
                             button_dict[playlist_index] = {
                                 "label": f"{playlist_translation}: {playlist_name}", "url": playlist_url.replace("www.", "")}
 
+                elif self.config["show_playlist_text"]:
+                    playlist_txt = f"{playlist_translation}: {playlist_name}"
+                    large_image_desc.append(playlist_txt)
+
             if album_url:
 
                 album_txt = f'{self.get_lang("album")}: {album_name}'
@@ -544,7 +541,7 @@ class RpcClient:
 
                 large_image_desc.append(album_txt)
 
-            if not track["stream"] and track["source"] not in ("lastfm", "http", "local"):
+            if not track["stream"] and (track["source"] not in ("lastfm", "http", "local") and (track["source"] in ("youtube", "soundcloud") and album_url)):
 
                 if track["source"] == "youtube":
                     if track["author"].endswith(" - topic") and not track["author"].endswith(
@@ -567,23 +564,23 @@ class RpcClient:
                 }
 
             try:
-                if track["autoplay"]:
-                    state += f" | 👍{self.get_lang('recommended')}"
-            except KeyError:
-                pass
-
-            try:
-                if track["247"]:
-                    state += " | ⏰24/7"
+                if track["queue"] and self.config["enable_queue_text"]:
+                    large_image_desc.append(f'🎶{self.get_lang("queue").replace("{queue}", str(track["queue"]))}')
             except KeyError:
                 pass
 
             if guild and self.config['show_guild_name']:
-                state += f" | 🌐{self.get_lang('server')}: {guild}"
+                large_image_desc.append(f"🌐{self.get_lang('server')}: {guild}")
 
             try:
-                if track["queue"] and self.config["enable_queue_text"]:
-                    state += f' | 🎶{self.get_lang("queue").replace("{queue}", str(track["queue"]))}'
+                if track["247"]:
+                    large_image_desc.append("⏰24/7")
+            except KeyError:
+                pass
+
+            try:
+                if track["autoplay"]:
+                    state += f" | 👍{self.get_lang('recommended')}"
             except KeyError:
                 pass
 
@@ -600,8 +597,6 @@ class RpcClient:
 
                 button_dict = {key: value for key, value in sorted(button_dict.items(), key=lambda k: k)[:2]}
 
-                if playlist_index not in button_dict and playlist_txt:
-                    state += f" | {playlist_txt}"
 
                 payload["buttons"] = [v for v in button_dict.values()]
 
