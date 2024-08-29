@@ -19,7 +19,7 @@ from PySimpleGUI import PySimpleGUI as sg
 from discoIPC.ipc import DiscordIPC
 
 from app_version import version
-from config_loader import read_config
+from config_loader import read_config, ActivityType
 from langs import langs
 from main_window import RPCGui
 
@@ -175,6 +175,8 @@ class RpcClient:
         self.session: Optional[aiohttp.ClientSession] = None
         self.closing = False
 
+        self.activity_type = {a.name: a.value for a in ActivityType}
+
         if os.path.isdir("./langs"):
 
             for f in os.listdir("./langs"):
@@ -290,6 +292,8 @@ class RpcClient:
 
         if data['op'] == "update":
 
+            data["type"] = ActivityType.listening.value
+
             self.update(user_id, bot_id, data, refresh_timestamp=refresh_timestamp)
 
         elif data['op'] == "idle":
@@ -300,6 +304,8 @@ class RpcClient:
                 self.last_data[user_id] = {bot_id: dict(data)}
 
             payload = self.get_idle_data(bot_id, data)
+
+            payload["type"] = ActivityType.playing.value
 
             if self.config["override_appid"]:
                 payload["assets"]["large_image"] = self.config["assets"]["idle"]
@@ -346,7 +352,7 @@ class RpcClient:
                 "small_image": "https://i.ibb.co/qD5gvKR/cd.gif"
             },
             "timestamps": {},
-            "type": 2,
+            "type": data.get("type", self.activity_type.get(self.config["activity_type"], ActivityType.playing.value))
         }
 
         track = current_data.pop("track", None)
@@ -539,9 +545,10 @@ class RpcClient:
 
                 button_dict[self.config["button_order"].index('album_button')] = album_button
 
-                large_image_desc.append(album_txt)
+                if data["type"] != ActivityType.listening.value:
+                    large_image_desc.append(album_txt)
 
-            if not track["stream"] and (track["source"] not in ("lastfm", "http", "local") and (track["source"] in ("youtube", "soundcloud") and album_url)):
+            if not track["stream"] and (track["source"] not in ("lastfm", "http", "local")):
 
                 if track["source"] == "youtube":
                     if track["author"].endswith(" - topic") and not track["author"].endswith(

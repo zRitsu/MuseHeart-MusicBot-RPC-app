@@ -1,3 +1,4 @@
+import enum
 import json
 import os.path
 
@@ -26,6 +27,7 @@ def read_config():
         "block_other_users_track": False,
         "button_order": ["listen_along_button", "listen_button", "playlist_button", "album_button", "open_lastfm", "lastfm_profile"],
         "button_character_limit": 31,
+        "activity_type": 0,
         "track_blacklist": "",
         "uploader_blacklist": "",
         "playlist_blacklist": "",
@@ -83,3 +85,10 @@ def read_config():
         base_config["button_character_limit"] = 32
 
     return base_config
+
+
+class ActivityType(enum.Enum):
+    playing = 0
+    listening = 2
+    watching = 3
+    competing = 5
