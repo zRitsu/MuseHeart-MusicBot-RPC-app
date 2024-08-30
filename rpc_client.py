@@ -291,9 +291,6 @@ class RpcClient:
         data = dict(data)
 
         if data['op'] == "update":
-
-            data["type"] = ActivityType.listening.value
-
             self.update(user_id, bot_id, data, refresh_timestamp=refresh_timestamp)
 
         elif data['op'] == "idle":
