@@ -353,7 +353,7 @@ class RpcClient:
         track = current_data.pop("track", None)
         thumb = current_data.pop("thumb", None)
         guild = current_data.pop("guild", "")
-        start_time = current_data.pop("start_time" or datetime.datetime.now(datetime.timezone.utc).timestamp())
+        start_time = current_data.pop("start_time", datetime.datetime.now(datetime.timezone.utc).timestamp())
 
         listen_along_url = current_data.pop("listen_along_invite", None)
 
