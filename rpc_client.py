@@ -302,10 +302,10 @@ class RpcClient:
 
             payload = self.get_idle_data(bot_id, data)
 
-            payload["type"] = ActivityType.playing.value
-
             if self.config["override_appid"]:
                 payload["assets"]["large_image"] = self.config["assets"]["idle"]
+
+            payload["timestamps"].update({"start": int(time.time())})
 
             self.update(user_id, bot_id, payload, refresh_timestamp=refresh_timestamp)
 
@@ -494,7 +494,7 @@ class RpcClient:
 
                 button_dict[self.config["button_order"].index('listen_button')] = {"label": listen_text, "url": url.replace("www.", "")}
 
-            state += f'{self.get_lang("author")}: {track["author"]}'
+            state += f'👤{self.get_lang("author")}: {track["author"]}'
 
             playlist_url = track.get("playlist_url")
             album_url = track.get("album_url")
@@ -542,8 +542,8 @@ class RpcClient:
 
                 button_dict[self.config["button_order"].index('album_button')] = album_button
 
-                if data["type"] != ActivityType.listening.value:
-                    large_image_desc.append(album_txt)
+                if payload["type"] != ActivityType.listening.value:
+                    large_image_desc.append(f"📀{album_txt}")
 
             if not track["stream"] and (track["source"] not in ("lastfm", "http", "local")):
 
