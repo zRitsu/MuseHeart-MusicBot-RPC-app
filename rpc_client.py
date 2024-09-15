@@ -305,8 +305,6 @@ class RpcClient:
             if self.config["override_appid"]:
                 payload["assets"]["large_image"] = self.config["assets"]["idle"]
 
-            payload["timestamps"].update({"start": int(time.time())})
-
             self.update(user_id, bot_id, payload, refresh_timestamp=refresh_timestamp)
 
         elif data['op'] == "close":
@@ -355,6 +353,8 @@ class RpcClient:
         track = current_data.pop("track", None)
         thumb = current_data.pop("thumb", None)
         guild = current_data.pop("guild", "")
+        start_time = current_data.pop("start_time" or datetime.datetime.now(datetime.timezone.utc).timestamp())
+
         listen_along_url = current_data.pop("listen_along_invite", None)
 
         for d in dict(current_data):
@@ -422,21 +422,11 @@ class RpcClient:
                     payload['timestamps']['start'] = track['duration']
 
                 else:
-                    startTime = datetime.datetime.now(datetime.timezone.utc)
 
-                    endtime = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(
-                        milliseconds=track["duration"] - track["position"]))
+                    endtime = datetime.datetime.now(tz=datetime.timezone.utc) + datetime.timedelta(milliseconds=track["duration"] - track["position"])
 
-                    if refresh_timestamp:
-                        payload['timestamps']['end'] = int(endtime.timestamp())
-                        payload['timestamps']['start'] = int(startTime.timestamp())
-                    else:
-                        try:
-                            payload['timestamps']['end'] = self.users_rpc[user_id][bot_id].last_data['timestamps']['end']
-                            payload['timestamps']['start'] = self.users_rpc[user_id][bot_id].last_data['timestamps']['start']
-                        except KeyError:
-                            payload['timestamps']['end'] = int(endtime.timestamp())
-                            payload['timestamps']['start'] = int(startTime.timestamp())
+                    payload['timestamps']['end'] = int(endtime.timestamp())
+                    payload['timestamps']['start'] = int(start_time)
 
                     player_loop = track.get('loop')
 
@@ -662,7 +652,7 @@ class RpcClient:
         }
 
         try:
-            payload["timestamps"] = {"end": data["idle_endtime"]}
+            payload["timestamps"] = {"end": data["idle_endtime"], "start": data["idle_starttime"]}
         except KeyError:
             pass
 
