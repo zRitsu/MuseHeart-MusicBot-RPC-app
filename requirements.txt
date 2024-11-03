@@ -1,6 +1,6 @@
 aiohttp
 git+https://github.com/zRitsu/discoIPC.git
-PySimpleGUI
+PySimpleGUI==4.70.1
 psgtray
 tornado
 pyinstaller
