@@ -4,6 +4,7 @@ import datetime
 import json
 import os
 import pprint
+import socket
 import sys
 import tempfile
 import time
@@ -96,12 +97,27 @@ class MyDiscordIPC(DiscordIPC):
             self.last_data.clear()
             raise e
 
-    def _get_ipc_path(self, id=0):
-        # credits: pypresence https://github.com/qwertyquerty/pypresence/blob/31718fb442e563f879160c16e0215c7c1fa16f23/pypresence/utils.py#L25
-        ipc = f"discord-ipc-{id}"
+    def test_ipc_path(self, path):
+        '''credits: pypresence https://github.com/qwertyquerty/pypresence/blob/master/pypresence/utils.py#L25
+        Tests an IPC pipe to ensure that it actually works'''
+        if sys.platform == 'win32' or sys.platform == 'win64':
+            with open(path):
+                return True
+        else:
+            with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as client:
+                client.connect(path)
+                return True
+
+    def _get_ipc_path(self, pipe=None):
+        # credits: pypresence https://github.com/qwertyquerty/pypresence/blob/master/pypresence/utils.py#L37
+        ipc = 'discord-ipc-'
+
+        if pipe is not None:
+            ipc = f"{ipc}{pipe}"
 
         if sys.platform in ('linux', 'darwin'):
-            tempdir = (os.environ.get('XDG_RUNTIME_DIR') or tempfile.gettempdir())
+            tempdir = os.environ.get('XDG_RUNTIME_DIR') or (
+                f"/run/user/{os.getuid()}" if os.path.exists(f"/run/user/{os.getuid()}") else tempfile.gettempdir())
             paths = ['.', 'snap.discord', 'app/com.discordapp.Discord', 'app/com.discordapp.DiscordCanary']
         elif sys.platform == 'win32':
             tempdir = r'\\?\pipe'
@@ -113,7 +129,7 @@ class MyDiscordIPC(DiscordIPC):
             full_path = os.path.abspath(os.path.join(tempdir, path))
             if sys.platform == 'win32' or os.path.isdir(full_path):
                 for entry in os.scandir(full_path):
-                    if entry.name.startswith(ipc) and os.path.exists(entry):
+                    if entry.name.startswith(ipc) and os.path.exists(entry) and self.test_ipc_path(entry.path):
                         return entry.path
 
 class IPCError(Exception):
