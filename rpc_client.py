@@ -16,7 +16,7 @@ from urllib.parse import quote
 import aiohttp
 import emoji
 import tornado.web
-from PySimpleGUI import PySimpleGUI as sg
+import FreeSimpleGUI as sg
 from discoIPC.ipc import DiscordIPC
 
 from app_version import version

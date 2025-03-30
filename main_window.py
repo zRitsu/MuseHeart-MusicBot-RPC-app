@@ -6,7 +6,7 @@ import traceback
 from tkinter import TclError
 from typing import TYPE_CHECKING, Literal
 
-from PySimpleGUI import PySimpleGUI as sg
+import FreeSimpleGUI as sg
 from app_version import version
 try:
     from psgtray import SystemTray
