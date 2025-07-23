@@ -20,7 +20,7 @@ import FreeSimpleGUI as sg
 from discoIPC.ipc import DiscordIPC
 
 from app_version import version
-from config_loader import read_config, ActivityType
+from config_loader import read_config, ActivityType, ActivityStatusDisplayType
 from langs import langs
 from main_window import RPCGui
 
@@ -192,6 +192,7 @@ class RpcClient:
         self.closing = False
 
         self.activity_type = {a.name: a.value for a in ActivityType}
+        self.activity_status_display_type = {a.name: a.value for a in ActivityStatusDisplayType}
 
         if os.path.isdir("./langs"):
 
@@ -363,7 +364,8 @@ class RpcClient:
                 "small_image": "https://i.ibb.co/qD5gvKR/cd.gif"
             },
             "timestamps": {},
-            "type": data.get("type", self.activity_type.get(self.config["activity_type"], ActivityType.playing.value))
+            "status_display_type": data.get("type", self.activity_type.get(self.config["activity_type"], ActivityType.playing.value)),
+            "type": data.get("type", self.activity_status_display_type.get(self.config["activity_status_display_type"], ActivityStatusDisplayType.details.value))
         }
 
         track = current_data.pop("track", None)
@@ -493,12 +495,10 @@ class RpcClient:
                 if not self.config["playlist_refs"]:
                     url = url.split("&list=")[0]
 
-                if self.config["show_platform_icon"]:
-                    listen_text = f'{self.get_lang("listen_on")} {track_source_replaces.get(track["source"], track["source"].capitalize())}' if (track["source"] and track['source'] not in ("http", "local")) else self.get_lang("listen_music")
-                else:
-                    listen_text = f'{self.get_lang("listen_music")}'
+                url = url.replace("www.", "")
 
-                button_dict[self.config["button_order"].index('listen_button')] = {"label": listen_text, "url": url.replace("www.", "")}
+                payload["assets"]["large_url"] = url
+                payload["details_url"] = url
 
             state += f'👤{self.get_lang("author")}: {track["author"]}'
 
@@ -619,6 +619,10 @@ class RpcClient:
                 payload['state'] = state[:128]
 
         try:
+            payload["name"] = "test act"
+
+            if track:
+                payload["url"] = track["url"]
 
             if track and not track.get('autoplay') and (self.config["block_other_users_track"] and track["requester_id"] != user_id):
                 self.users_rpc[user_id][bot_id].clear()

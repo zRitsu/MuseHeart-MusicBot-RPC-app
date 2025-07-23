@@ -27,7 +27,8 @@ def read_config():
         "block_other_users_track": False,
         "button_order": ["listen_along_button", "listen_button", "playlist_button", "album_button", "open_lastfm", "lastfm_profile"],
         "button_character_limit": 31,
-        "activity_type": 0,
+        "activity_type": "listening",
+        "activity_status_display_type": "details",
         "track_blacklist": "",
         "uploader_blacklist": "",
         "playlist_blacklist": "",
@@ -92,3 +93,9 @@ class ActivityType(enum.Enum):
     listening = 2
     watching = 3
     competing = 5
+
+
+class ActivityStatusDisplayType(enum.Enum):
+    name = 0
+    state = 1
+    details = 2

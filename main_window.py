@@ -13,7 +13,7 @@ try:
 except:
     SystemTray = None
 
-from config_loader import ActivityType
+from config_loader import ActivityType, ActivityStatusDisplayType
 
 if TYPE_CHECKING:
     from rpc_client import RpcClient
@@ -73,6 +73,10 @@ class RPCGui:
                               key='language', enable_events=True)],
                     [sg.Text('Tipo de atividade (quando houver música ativa):'),
                      sg.Combo([a.name for a in ActivityType], default_value=self.config["activity_type"], auto_size_text=True,
+                              key='activity_type', enable_events=True)],
+                    [sg.Text('Modo de exibição do nome da atividade (status do usuário):'),
+                     sg.Combo([a.name for a in ActivityStatusDisplayType], default_value=self.config["activity_status_display_type"],
+                              auto_size_text=True,
                               key='activity_type', enable_events=True)],
                     [sg.Checkbox('Exibir miniatura da música (quando disponível).',
                                  default=self.config["show_thumbnail"], key='show_thumbnail', enable_events=True)],
