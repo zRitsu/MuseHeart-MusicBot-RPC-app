@@ -668,7 +668,8 @@ class RpcClient:
             "thumb": data.pop("thumb", None),
             "assets": {},
             "details": text_idle[0],
-            "timestamps": {}
+            "timestamps": {},
+            "status_display_type": 0,
         }
 
         try:
