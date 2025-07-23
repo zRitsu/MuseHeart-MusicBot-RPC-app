@@ -108,7 +108,7 @@ class RPCGui:
             [
                 sg.Frame("", [
                     [sg.Checkbox('Exibir o botão: ver/ouvir música/vídeo.',
-                                    default=self.config["show_listen_button"],
+                                    default=self.config["playlist_button"],
                                     key='show_listen_button', enable_events=True)],
                     [sg.Checkbox('Adicionar o ID da playlist na url do botão de ver/ouvir (Youtube).',
                                     default=self.config["playlist_refs"], key='playlist_refs',
