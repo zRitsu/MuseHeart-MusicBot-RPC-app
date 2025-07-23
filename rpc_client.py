@@ -619,8 +619,6 @@ class RpcClient:
                 payload['state'] = state[:128]
 
         try:
-            payload["name"] = "test act"
-
             if track:
                 payload["url"] = track["url"]
 
