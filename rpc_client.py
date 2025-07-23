@@ -619,9 +619,6 @@ class RpcClient:
                 payload['state'] = state[:128]
 
         try:
-            if track:
-                payload["url"] = track["url"]
-
             if track and not track.get('autoplay') and (self.config["block_other_users_track"] and track["requester_id"] != user_id):
                 self.users_rpc[user_id][bot_id].clear()
             else:
