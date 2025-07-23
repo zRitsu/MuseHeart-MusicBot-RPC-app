@@ -4,6 +4,7 @@ import datetime
 import json
 import os
 import pprint
+import re
 import socket
 import sys
 import tempfile
@@ -108,22 +109,19 @@ class MyDiscordIPC(DiscordIPC):
                 client.connect(path)
                 return True
 
-    def _get_ipc_path(self, pipe=None):
+    def _get_ipc_path(self, pipe=0):
         # credits: pypresence https://github.com/qwertyquerty/pypresence/blob/master/pypresence/utils.py#L37
-        ipc = 'discord-ipc-'
 
-        if pipe is not None:
-            ipc = f"{ipc}{pipe}"
+        ipc = f"discord-ipc-{pipe}"
 
-        if sys.platform in ('linux', 'darwin'):
-            tempdir = os.environ.get('XDG_RUNTIME_DIR') or (
-                f"/run/user/{os.getuid()}" if os.path.exists(f"/run/user/{os.getuid()}") else tempfile.gettempdir())
-            paths = ['.', 'snap.discord', 'app/com.discordapp.Discord', 'app/com.discordapp.DiscordCanary']
-        elif sys.platform == 'win32':
+        if sys.platform == 'win32':
             tempdir = r'\\?\pipe'
             paths = ['.']
+
+        #elif sys.platform in ('linux', 'darwin'):
         else:
-            return
+            tempdir = os.environ.get('XDG_RUNTIME_DIR') or (f"/run/user/{os.getuid()}" if os.path.exists(f"/run/user/{os.getuid()}") else tempfile.gettempdir())
+            paths = [re.sub(r'\/$', '', tempdir) + f'/{ipc}']
 
         for path in paths:
             full_path = os.path.abspath(os.path.join(tempdir, path))
@@ -131,6 +129,8 @@ class MyDiscordIPC(DiscordIPC):
                 for entry in os.scandir(full_path):
                     if entry.name.startswith(ipc) and os.path.exists(entry) and self.test_ipc_path(entry.path):
                         return entry.path
+        return None
+
 
 class IPCError(Exception):
 
