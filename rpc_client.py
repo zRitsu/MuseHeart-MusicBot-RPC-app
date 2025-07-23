@@ -667,7 +667,7 @@ class RpcClient:
             "assets": {},
             "details": text_idle[0],
             "timestamps": {},
-            "status_display_type": 0,
+            "status_display_type": ActivityStatusDisplayType.name.value,
         }
 
         try:
