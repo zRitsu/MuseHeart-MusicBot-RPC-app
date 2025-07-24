@@ -25,7 +25,7 @@ def read_config():
         "reconnect_timeout": 7,
         "enable_queue_text": True,
         "block_other_users_track": False,
-        "button_order": ["listen_along_button", "playlist_button", "album_button", "open_lastfm", "lastfm_profile"],
+        "button_order": ["playlist_button", "listen_along_button", "album_button", "open_lastfm", "lastfm_profile"],
         "button_character_limit": 31,
         "activity_type": "listening",
         "activity_status_display_type": "details",
