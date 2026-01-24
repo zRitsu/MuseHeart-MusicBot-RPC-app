@@ -297,8 +297,8 @@ class RPCGui:
         else:
             self.window[MLINE_KEY].update(text + "\n", text_color_for_value='green2', append=True)
 
-        if tooltip and self.tray and self.tray.tray_icon.visible:
-            self.tray.show_message()
+        if tooltip and self.tray and self.tray.icon.visible:
+            self.tray.show_message(text)
 
         self.ready = True
 
