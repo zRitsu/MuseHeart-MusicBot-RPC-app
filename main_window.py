@@ -8,10 +8,7 @@ from typing import TYPE_CHECKING, Literal
 
 import FreeSimpleGUI as sg
 from app_version import version
-try:
-    from psgtray import SystemTray
-except:
-    SystemTray = None
+from tk_tray import TkSystemTray
 
 from config_loader import ActivityType, ActivityStatusDisplayType
 
@@ -35,8 +32,13 @@ class RPCGui:
         self.rpc_started = False
 
         self.window = self.get_window()
-        menu = ['', ['Abrir Janela', 'Fechar App']]
-        self.tray = None if not SystemTray else SystemTray(menu, single_click_events=True, window=self.window, tooltip=self.appname)
+
+        self.tray = TkSystemTray(
+            appname=self.appname,
+            icon_path="icon.ico",  # ou .ico
+            on_show=self.show_window,
+            on_exit=self.client.exit
+        )
 
         if autostart > 14:
 
@@ -271,7 +273,7 @@ class RPCGui:
             ]
         ]
 
-        return sg.Window(self.appname, tabgroup, finalize=True, enable_close_attempted_event=True)
+        return sg.Window(self.appname, tabgroup, finalize=True, enable_close_attempted_event=True, icon="icon.ico")
 
     def update_log(self, text: str, tooltip: bool = False,
                    log_type: Literal["normal", "warning", "error", "info"] = "normal",
@@ -319,6 +321,7 @@ class RPCGui:
     def hide_to_tray(self):
         self.window.hide()
         self.tray.show_icon()
+        self.tray.show_message(self.appname, "Executando em segundo plano.")
 
     def start_presence(self):
 
@@ -349,18 +352,6 @@ class RPCGui:
             if event in (sg.WIN_CLOSED, 'exit', sg.WIN_CLOSE_ATTEMPTED_EVENT):
                 self.client.exit()
                 break
-
-            elif self.tray and event == self.tray.key:
-
-                if values[event] in ("Abrir Janela", sg.EVENT_SYSTEM_TRAY_ICON_DOUBLE_CLICKED,
-                                     sg.EVENT_SYSTEM_TRAY_ICON_ACTIVATED):
-                    self.show_window()
-
-                elif values[event] == "Fechar App":
-                    if self.tray:
-                        self.tray.hide_icon()
-                    self.client.exit()
-                    break
 
             elif event == "tray":
                 if not self.tray:

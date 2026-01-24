@@ -4,7 +4,7 @@ import os.path
 
 def read_config():
 
-    base_config = {
+    default_config = {
         "language": "pt-br",
         "urls": [],
         "urls_disabled": [],
@@ -18,7 +18,7 @@ def read_config():
         "playlist_refs": True,
         "show_thumbnail": True,
         "bot_invite": True,
-        "app_port": 85888,
+        "app_port": 41251,
         "dummy_app_id": 921606662467498045,
         "override_appid": False,
         "heartbeat": 30,
@@ -55,6 +55,8 @@ def read_config():
         }
     }
 
+    base_config = default_config.copy()
+
     base_config["reconnect_timeout"] = int(base_config["reconnect_timeout"])
     base_config["heartbeat"] = int(base_config["heartbeat"])
 
@@ -84,6 +86,9 @@ def read_config():
 
     if base_config["button_character_limit"] > 32:
         base_config["button_character_limit"] = 32
+
+    if base_config["app_port"] > 65535:
+        base_config["app_port"] = default_config["app_port"]
 
     return base_config
 

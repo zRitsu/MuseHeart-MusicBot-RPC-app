@@ -1,7 +1,8 @@
 aiohttp
 git+https://github.com/zRitsu/discoIPC.git
 FreeSimpleGUI
-psgtray
+pystray
+pillow
 tornado
 pyinstaller
 psutil

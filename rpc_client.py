@@ -16,7 +16,6 @@ from urllib.parse import quote
 
 import aiohttp
 import emoji
-import tornado.web
 import FreeSimpleGUI as sg
 from discoIPC.ipc import DiscordIPC
 
@@ -27,17 +26,12 @@ from main_window import RPCGui
 
 config = read_config()
 
-class MainHandler(tornado.web.RequestHandler):
-    def get(self):
-        self.write("O app de rich_presence está em execução!")
-
-
-a = tornado.web.Application([(r'/', MainHandler)])
-
 try:
-    a.listen(config['app_port'])
-except:
-    sg.popup_ok(F"A porta {config['app_port']} está em uso!\nO app já está em execução?")
+    s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+    s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+    s.bind(('::', config['app_port'], 0, 0))
+except Exception as e:
+    sg.popup_ok(f"A porta {config['app_port']} está em uso!\nO app já está em execução?\n{repr(e)}")
     sys.exit(0)
 
 def time_format(milliseconds: Union[int, float]) -> str:
@@ -321,6 +315,8 @@ class RpcClient:
 
             if self.config["override_appid"]:
                 payload["assets"]["large_image"] = self.config["assets"]["idle"]
+
+            payload["type"] = ActivityType.playing.value
 
             self.update(user_id, bot_id, payload, refresh_timestamp=refresh_timestamp)
 
