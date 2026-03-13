@@ -6,7 +6,7 @@ A desktop app that shows Discord Rich Presence for music bots running on the [Mu
 [![](https://i.ibb.co/6tVbfFH/image.png)](https://i.ibb.co/6tVbfFH/image.png)
 
 ### App Preview:
-[![](https://i.ibb.co/4RmDwS1G/image.png)](https://i.ibb.co/q5ZrrRv/image.png)
+[![](https://i.ibb.co/4RmDwS1G/image.png)](https://i.ibb.co/4RmDwS1G/image.png)
 
 ---
 
