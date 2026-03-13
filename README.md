@@ -1,52 +1,106 @@
-# Simples App para usar Rich Presence em bots de música que usam essa [source](https://github.com/zRitsu/MuseHeart-MusicBot).
+# MuseHeart-MusicBot RPC App
 
+A desktop app that shows Discord Rich Presence for music bots running on the [MuseHeart-MusicBot](https://github.com/zRitsu/MuseHeart-MusicBot) source.
 
 ### Presence Preview:
 [![](https://i.ibb.co/6tVbfFH/image.png)](https://i.ibb.co/6tVbfFH/image.png)
 
 ### App Preview:
-[![](https://i.ibb.co/q5ZrrRv/image.png)](https://i.ibb.co/q5ZrrRv/image.png)
-
-## Para usar o app você pode usar um dos seguintes métodos abaixo:
+[![](https://i.ibb.co/4RmDwS1G/image.png)](https://i.ibb.co/q5ZrrRv/image.png)
 
 ---
-1 - Usando a versão já compilada pra EXE que está nos [releases](https://github.com/zRitsu/Discord-MusicBot-RPC/releases) (Apenas windows)
 
-2 - Executando o code diretamente seguindo os passos abaixo:
+## Requirements
 
-* Baixe o code deste repositório como zip clicando no botão "code" e depois em download zip.
-* Extraia o arquivo zip e navegue na pasta até encontrar os arquivos da source.
-* Use o comando abaixo para instalar as dependências:
-```
-python3 -m pip install -r requirements.txt
-```
-* Agora basta apenas usar o comando abaixo para executar o app:
-```
-python3 rpc_client.py
-```
-* Opcional: Caso queira compilar pra EXE você pode clicar 2x no arquivo build.bat (recomendado) ou executar o comando abaixo (após o processo o arquivo vai estar na pasta: builds):
+- Discord running on your PC
+- A music bot based on [MuseHeart-MusicBot](https://github.com/zRitsu/MuseHeart-MusicBot)
+- Python 3.10+ (if running from source)
+
+---
+
+## Installation
+
+### Option 1 — Pre-built executable (Windows only)
+
+Download the latest `.exe` from the [releases page](https://github.com/zRitsu/Discord-MusicBot-RPC/releases) and run it directly.
+
+### Option 2 — Run from source
+
+1. Download this repository as a ZIP (click **Code → Download ZIP**) and extract it, or clone it:
+   ```
+   git clone https://github.com/zRitsu/MuseHeart-MusicBot-RPC-app
+   ```
+2. Install dependencies:
+   ```
+   python -m pip install -r requirements.txt
+   ```
+3. Start the app:
+   ```
+   python rpc_client.py
+   ```
+
+### Option 3 — Build your own executable
+
+Double-click `build.bat` (recommended), or run:
 ```
 pyinstaller rpc_client.py
 ```
----
-### Será necessário ter o link do websocket de onde o bot está rodando para add no App.
-
-* Caso esteja rodando a source de música localmente no pc (e que não tenha alterado qualquer configuração padrão no .env) geralmente o link é esse:
-```
-ws://localhost/ws
-```
-* Se seu bot tiver hospedado em algum serviço que forneça acesso http (ex: Repl.it, Heroku etc) o link do app será exibido na página renderizada:
-
-[![](https://i.ibb.co/n80PT0L/image.png)](https://i.ibb.co/n80PT0L/image.png)
-
-* Adicione o link do websocket na aba Socket Settings.
-
-* Obtenha o token de acesso através do bot usando o comando `/rich_presence` (ou mencionando o bot em uma mensagem: `@bot richpresence`).
-
-* Adicione o token na aba Socket Settings.
-
-Após configurar esses dois itens, basta clicar em "Iniciar Presence".
+The compiled executable will be placed in the `builds/` folder.
 
 ---
 
-### Caso tenha algum problema, poste uma [issue](https://github.com/zRitsu/Discord-MusicBot-RPC/issues) detalhando o problema.
+## Setup
+
+### 1. WebSocket URL
+
+You need the WebSocket URL of the server where your music bot is running.
+
+- **Local bot** (default `.env` settings):
+  ```
+  ws://localhost/ws
+  ```
+- **Hosted bot** (e.g. on a VPS or cloud service): the URL is shown on the bot's rendered web page.
+
+  [![](https://i.ibb.co/n80PT0L/image.png)](https://i.ibb.co/n80PT0L/image.png)
+
+Add the URL in the **Socket Settings** tab.
+
+### 2. Access token
+
+Get your RPC token from the bot using the `/rich_presence` slash command (or by mentioning the bot: `@bot richpresence`), then paste it in the **Socket Settings** tab.
+
+### 3. Start
+
+Click **Start Presence** — your Discord activity will update automatically while music is playing.
+
+---
+
+## Auto-start
+
+You can pass `-autostart <seconds>` to launch presence automatically on startup (minimum 15 seconds):
+```
+python rpc_client.py -autostart 15
+```
+The window will minimize to the system tray and presence will start after the given delay.
+
+---
+
+## Customization
+
+All settings are saved to `config.json` and can be changed through the GUI:
+
+- **Display** — activity type (Playing / Listening / Watching / Competing), status display field, thumbnail, platform icon, guild name, queue text
+- **Buttons** — listen button, playlist button, album button, Last.FM button, listen-along button, bot invite; drag-and-drop priority order
+- **Blacklists** — hide presence for specific track titles, uploaders, or playlist names (separate entries with `||`)
+- **Assets** — override icon URLs for loop, pause, play, stream, and idle states
+- **App ID** — optionally override the Discord application ID used for presence
+
+### Adding languages
+
+Create a JSON file in a `langs/` folder next to the script, named after the language code (e.g. `es.json`). Any keys defined there will override or extend the built-in translations.
+
+---
+
+## Troubleshooting
+
+If you run into any issues, open an [issue](https://github.com/zRitsu/Discord-MusicBot-RPC/issues) with a description of the problem and any relevant log output from the app.

@@ -1,0 +1,669 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>800</width>
+    <height>666</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>800</width>
+    <height>607</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>800</width>
+    <height>666</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>Discord RPC (Music Bot)</string>
+  </property>
+  <property name="windowIcon">
+   <iconset resource="res/res.qrc">
+    <normaloff>:/icon.ico</normaloff>:/icon.ico</iconset>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QVBoxLayout" name="verticalLayout_main">
+    <item>
+     <widget class="QTabWidget" name="tabWidget">
+      <property name="maximumSize">
+       <size>
+        <width>16777215</width>
+        <height>309</height>
+       </size>
+      </property>
+      <property name="currentIndex">
+       <number>0</number>
+      </property>
+      <widget class="QWidget" name="tab_config">
+       <attribute name="title">
+        <string>Main RPC Settings</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="vl_config">
+        <item>
+         <widget class="QScrollArea" name="scrollArea_config">
+          <property name="frameShape">
+           <enum>QFrame::NoFrame</enum>
+          </property>
+          <property name="widgetResizable">
+           <bool>true</bool>
+          </property>
+          <widget class="QWidget" name="scrollContents_config">
+           <property name="geometry">
+            <rect>
+             <x>0</x>
+             <y>0</y>
+             <width>758</width>
+             <height>265</height>
+            </rect>
+           </property>
+           <layout class="QVBoxLayout" name="vl_config_inner">
+            <item>
+             <layout class="QHBoxLayout" name="hl_language">
+              <item>
+               <widget class="QLabel" name="lbl_language">
+                <property name="text">
+                 <string>Idioma da presence:</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QComboBox" name="combo_language">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="hl_activity_type">
+              <item>
+               <widget class="QLabel" name="lbl_activity_type">
+                <property name="text">
+                 <string>Tipo de atividade (quando houver música ativa):</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QComboBox" name="combo_activity_type">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="hl_status_display">
+              <item>
+               <widget class="QLabel" name="lbl_activity_status">
+                <property name="text">
+                 <string>Modo de exibição do nome da atividade (status do usuário):</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QComboBox" name="combo_activity_status_display_type">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="chk_show_thumbnail">
+              <property name="text">
+               <string>Exibir miniatura da música (quando disponível).</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="chk_show_platform_icon">
+              <property name="text">
+               <string>Exibir ícone da plataforma de música.</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="chk_enable_queue_text">
+              <property name="text">
+               <string>Exibir quantidade de músicas na fila (quando disponível).</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="chk_show_guild_name">
+              <property name="text">
+               <string>Exibir nome do servidor que você está ouvindo.</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="chk_show_playlist_text">
+              <property name="text">
+               <string>Exibir nome da playlist no large_text da presence (quando disponível).</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="chk_block_other_users_track">
+              <property name="text">
+               <string>Bloquear update de status com músicas adicionadas por outros membros.</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="hl_appid">
+              <item>
+               <widget class="QCheckBox" name="chk_override_appid">
+                <property name="text">
+                 <string>Usar APP_ID Customizado:</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLineEdit" name="input_dummy_app_id">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+           </layout>
+          </widget>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_rpc_buttons">
+       <attribute name="title">
+        <string>RPC Buttons Settings</string>
+       </attribute>
+       <layout class="QHBoxLayout" name="hl_buttons_tab">
+        <item>
+         <layout class="QVBoxLayout" name="vl_buttons_checks">
+          <item>
+           <widget class="QCheckBox" name="chk_show_listen_button">
+            <property name="text">
+             <string>Exibir o botão: ver/ouvir música/vídeo.</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="chk_playlist_refs">
+            <property name="text">
+             <string>Adicionar o ID da playlist na url do botão de ver/ouvir (Youtube).</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="chk_show_listen_along_button">
+            <property name="text">
+             <string>Exibir o botão: Ouvir junto via Discord (Caso disponível).</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="chk_show_playlist_button">
+            <property name="text">
+             <string>Exibir o botão: playlist (quando disponível).</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="chk_show_playlist_name_in_button">
+            <property name="text">
+             <string>Exibir o nome da playlist no botão de visualizar playlist (quando disponível).</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="chk_bot_invite">
+            <property name="text">
+             <string>Exibir botão de convite do bot (quando disponível).</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="spacer_btn_checks">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="grp_button_order">
+          <property name="title">
+           <string>Prioridade de botões</string>
+          </property>
+          <layout class="QVBoxLayout" name="vl_button_order">
+           <item>
+            <widget class="QListWidget" name="list_button_order"/>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="hl_order_btns">
+             <item>
+              <widget class="QPushButton" name="btn_up_button_order">
+               <property name="text">
+                <string>Up</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="btn_down_button_order">
+               <property name="text">
+                <string>Down</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+          </layout>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_socket">
+       <attribute name="title">
+        <string>Socket Settings</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="vl_socket">
+        <item>
+         <widget class="QGroupBox" name="grp_token">
+          <property name="title">
+           <string>Token de acesso</string>
+          </property>
+          <layout class="QHBoxLayout" name="hl_token">
+           <item>
+            <widget class="QLineEdit" name="input_token">
+             <property name="readOnly">
+              <bool>true</bool>
+             </property>
+             <property name="placeholderText">
+              <string>Cole seu token aqui clicando em &quot;Colar Token&quot;</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="btn_paste_token">
+             <property name="text">
+              <string>Colar Token</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="hl_url_headers">
+          <item>
+           <widget class="QLabel" name="lbl_urls_active">
+            <property name="styleSheet">
+             <string>background-color: green; color: white; font-size: 11pt; padding: 3px;</string>
+            </property>
+            <property name="text">
+             <string>Links Ativados:</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="lbl_urls_disabled">
+            <property name="styleSheet">
+             <string>background-color: red; color: white; font-size: 11pt; padding: 3px;</string>
+            </property>
+            <property name="text">
+             <string>Links Desativados:</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="hl_url_lists">
+          <item>
+           <widget class="QListWidget" name="list_url_active">
+            <property name="toolTip">
+             <string>Clique em um item para desativá-lo</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QListWidget" name="list_url_disabled">
+            <property name="toolTip">
+             <string>Clique em um item para reativá-lo</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="hl_url_buttons">
+          <item>
+           <widget class="QPushButton" name="btn_add_url">
+            <property name="text">
+             <string>Adicionar</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="btn_edit_url">
+            <property name="text">
+             <string>Editar</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="btn_remove_url">
+            <property name="text">
+             <string>Remover</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_assets">
+       <attribute name="title">
+        <string>Assets</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="vl_assets">
+        <item>
+         <widget class="QScrollArea" name="scrollArea_assets">
+          <property name="frameShape">
+           <enum>QFrame::NoFrame</enum>
+          </property>
+          <property name="widgetResizable">
+           <bool>true</bool>
+          </property>
+          <widget class="QWidget" name="scrollContents_assets">
+           <property name="geometry">
+            <rect>
+             <x>0</x>
+             <y>0</y>
+             <width>758</width>
+             <height>265</height>
+            </rect>
+           </property>
+           <layout class="QFormLayout" name="form_assets">
+            <item row="0" column="0">
+             <widget class="QLabel" name="lbl_asset_loop">
+              <property name="text">
+               <string>Loop/Repetição:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QLineEdit" name="input_asset_loop"/>
+            </item>
+            <item row="1" column="0">
+             <widget class="QLabel" name="lbl_asset_loop_queue">
+              <property name="text">
+               <string>Loop/Repetição Fila:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QLineEdit" name="input_asset_loop_queue"/>
+            </item>
+            <item row="2" column="0">
+             <widget class="QLabel" name="lbl_asset_play">
+              <property name="text">
+               <string>Tocando:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QLineEdit" name="input_asset_play"/>
+            </item>
+            <item row="3" column="0">
+             <widget class="QLabel" name="lbl_asset_pause">
+              <property name="text">
+               <string>Pausa:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="1">
+             <widget class="QLineEdit" name="input_asset_pause"/>
+            </item>
+            <item row="4" column="0">
+             <widget class="QLabel" name="lbl_asset_stream">
+              <property name="text">
+               <string>Stream/Transmissão:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="4" column="1">
+             <widget class="QLineEdit" name="input_asset_stream"/>
+            </item>
+            <item row="5" column="0">
+             <widget class="QLabel" name="lbl_asset_idle">
+              <property name="text">
+               <string>Em espera:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="5" column="1">
+             <widget class="QLineEdit" name="input_asset_idle"/>
+            </item>
+           </layout>
+          </widget>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_blacklists">
+       <attribute name="title">
+        <string>Blacklists</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="vl_blacklists">
+        <item>
+         <widget class="QGroupBox" name="grp_track_blacklist">
+          <property name="title">
+           <string>Track title blacklist</string>
+          </property>
+          <layout class="QVBoxLayout" name="vl_track_bl">
+           <item>
+            <widget class="QLineEdit" name="input_track_blacklist"/>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="grp_uploader_blacklist">
+          <property name="title">
+           <string>Uploader/Author blacklist</string>
+          </property>
+          <layout class="QVBoxLayout" name="vl_uploader_bl">
+           <item>
+            <widget class="QLineEdit" name="input_uploader_blacklist"/>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="grp_playlist_blacklist">
+          <property name="title">
+           <string>Playlist name blacklist</string>
+          </property>
+          <layout class="QVBoxLayout" name="vl_playlist_bl">
+           <item>
+            <widget class="QLineEdit" name="input_playlist_blacklist"/>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="lbl_blacklist_note">
+          <property name="text">
+           <string>Nota: Para múltiplas palavras separe com ||</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="spacer_blacklists">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="hl_log_and_card">
+      <item>
+       <widget class="QPlainTextEdit" name="txt_log">
+        <property name="styleSheet">
+         <string>background-color: #000000; color: #00ff00; font-family: Consolas, monospace; font-size: 9pt;</string>
+        </property>
+        <property name="readOnly">
+         <bool>true</bool>
+        </property>
+        <property name="placeholderText">
+         <string>Log de eventos...</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QWidget" name="rpc_card_placeholder" native="true">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>387</width>
+          <height>500</height>
+         </size>
+        </property>
+        <property name="styleSheet">
+         <string>background-color: transparent;</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="hl_bottom_buttons">
+      <item>
+       <widget class="QPushButton" name="btn_start_presence">
+        <property name="styleSheet">
+         <string>font-weight: bold; font-size: 11pt;</string>
+        </property>
+        <property name="text">
+         <string>Iniciar Presence</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btn_stop_presence">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="styleSheet">
+         <string>font-weight: bold; font-size: 11pt;</string>
+        </property>
+        <property name="text">
+         <string>Parar Presence</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btn_clear_log">
+        <property name="styleSheet">
+         <string>font-weight: bold; font-size: 11pt;</string>
+        </property>
+        <property name="text">
+         <string>Limpar Log</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btn_tray">
+        <property name="styleSheet">
+         <string>font-weight: bold; font-size: 11pt;</string>
+        </property>
+        <property name="text">
+         <string>Ocultar</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btn_exit">
+        <property name="styleSheet">
+         <string>font-weight: bold; font-size: 11pt;</string>
+        </property>
+        <property name="text">
+         <string>Fechar</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btn_save_changes">
+        <property name="visible">
+         <bool>false</bool>
+        </property>
+        <property name="styleSheet">
+         <string>font-weight: bold; font-size: 11pt; background-color: #f0a500; color: black;</string>
+        </property>
+        <property name="text">
+         <string>Salvar Alterações</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+   </layout>
+  </widget>
+ </widget>
+ <resources>
+  <include location="res/res.qrc"/>
+ </resources>
+ <connections/>
+</ui>

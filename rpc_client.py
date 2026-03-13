@@ -16,23 +16,64 @@ from urllib.parse import quote
 
 import aiohttp
 import emoji
-import FreeSimpleGUI as sg
+from PyQt5.QtWidgets import QApplication, QMessageBox
 from discoIPC.ipc import DiscordIPC
 
 from app_version import version
 from config_loader import read_config, ActivityType, ActivityStatusDisplayType
 from langs import langs
-from main_window import RPCGui
+from rpc_gui import RPCGui
 
 config = read_config()
 
-try:
-    s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
-    s.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
-    s.bind(('::', config['app_port'], 0, 0))
-except Exception as e:
-    sg.popup_ok(f"A porta {config['app_port']} está em uso!\nO app já está em execução?\n{repr(e)}")
-    sys.exit(0)
+_lock_socket: Optional[socket.socket] = None
+
+def acquire_single_instance_lock() -> None:
+    """
+    Attempt to acquire an exclusive lock by binding to a specific port.
+    If binding fails → another instance is already running.
+    """
+    global _lock_socket
+
+    port = config['app_port']
+
+    # Try IPv4 first (most common and reliable on many systems)
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        s.bind(('127.0.0.1', port))
+        _lock_socket = s
+        return
+    except OSError:
+        pass
+
+    # Fallback: try IPv6 localhost
+    try:
+        s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        # Only bind to localhost (not dual-stack wildcard)
+        s.bind(('::1', port))
+        _lock_socket = s
+        return
+    except OSError as e:
+        # Both attempts failed → port is most likely in use
+        show_port_in_use_message(port, e)
+        sys.exit(1)
+
+
+def show_port_in_use_message(port: int, exc: Exception) -> None:
+    """Display error message using minimal QApplication instance."""
+    # Create QApplication only when needed (avoids side-effects if called early)
+    app = QApplication.instance() or QApplication(sys.argv)
+
+    QMessageBox.critical(
+        None,
+        "Instance already running",
+        f"Port {port} is already in use.\n"
+        "Another instance of the application is likely running.\n\n"
+        f"Error detail: {type(exc).__name__}: {exc}"
+    )
+
 
 def time_format(milliseconds: Union[int, float]) -> str:
     minutes, seconds = divmod(int(milliseconds / 1000), 60)
@@ -45,7 +86,7 @@ def time_format(milliseconds: Union[int, float]) -> str:
         strings = f"{hours}:{strings}"
 
     if days:
-        strings = (f"{days} dias" if days > 1 else f"{days} dia") + (f", {strings}" if strings != "00:00" else "")
+        strings = (f"{days} days" if days > 1 else f"{days} day") + (f", {strings}" if strings != "00:00" else "")
 
     return strings
 
@@ -64,16 +105,14 @@ class MyDiscordIPC(DiscordIPC):
         self.last_data = {}
 
     def _send(self, opcode, payload):
-
         encoded_payload = self._encode(opcode, payload)
-
         try:
             if self.platform == 'windows':
                 self.socket.write(encoded_payload)
                 try:
                     self.socket.flush()
                 except OSError:
-                    raise IPCError(f'Não foi possivel enviar dados ao discord via IPC.', client=self)
+                    raise IPCError('Failed to send data to Discord via IPC.', client=self)
             else:
                 self.socket.send(encoded_payload)
         except Exception as e:
@@ -95,7 +134,7 @@ class MyDiscordIPC(DiscordIPC):
     def test_ipc_path(self, path):
         '''credits: pypresence https://github.com/qwertyquerty/pypresence/blob/master/pypresence/utils.py#L25
         Tests an IPC pipe to ensure that it actually works'''
-        if sys.platform == 'win32' or sys.platform == 'win64':
+        if sys.platform in ('win32', 'win64'):
             with open(path):
                 return True
         else:
@@ -111,10 +150,11 @@ class MyDiscordIPC(DiscordIPC):
         if sys.platform == 'win32':
             tempdir = r'\\?\pipe'
             paths = ['.']
-
-        #elif sys.platform in ('linux', 'darwin'):
         else:
-            tempdir = os.environ.get('XDG_RUNTIME_DIR') or (f"/run/user/{os.getuid()}" if os.path.exists(f"/run/user/{os.getuid()}") else tempfile.gettempdir())
+            tempdir = (
+                os.environ.get('XDG_RUNTIME_DIR')
+                or (f"/run/user/{os.getuid()}" if os.path.exists(f"/run/user/{os.getuid()}") else tempfile.gettempdir())
+            )
             paths = [re.sub(r'\/$', '', tempdir) + f'/{ipc}']
 
         for path in paths:
@@ -136,39 +176,30 @@ class IPCError(Exception):
         return self.error
 
 
-user_clients = {}
+user_clients: dict[int, dict] = {}
 
-valid_presence_fields = ("state", "details", "assets", "timestamps", "pid", "start", "end", "large_image", "large_text",
-                         "small_image", "small_text", "party_id", "party_size", "join", "spectate", "match", "buttons",
-                         "instance")
+valid_presence_fields = (
+    "state", "details", "assets", "timestamps", "pid", "start", "end",
+    "large_image", "large_text", "small_image", "small_text", "party_id",
+    "party_size", "join", "spectate", "match", "buttons", "instance"
+)
 
 replaces = [
-    ('&quot;', '"'),
-    ('&amp;', '&'),
-    ('(', '\u0028'),
-    (')', '\u0029'),
-    ('[', '【'),
-    (']', '】'),
-    ("  ", " "),
-    ("*", '"'),
-    ("_", ' '),
-    ("{", "\u0028"),
-    ("}", "\u0029"),
-    ("`", "'")
+    ('&quot;', '"'), ('&amp;', '&'), ('(', '\u0028'), (')', '\u0029'),
+    ('[', '【'), (']', '】'), ("  ", " "), ("*", '"'), ("_", ' '),
+    ('{', '\u0028'), ('}', '\u0029'), ('`', "'"),
 ]
 
 
 def fix_characters(text: str, limit=30):
     for r in replaces:
         text = text.replace(r[0], r[1])
-
     if len(text) > limit:
         return f"{text[:limit - 3]}..."
     return text
 
 
 loop = asyncio.new_event_loop()
-
 _t = Thread(target=loop.run_forever)
 _t.daemon = True
 _t.start()
@@ -177,8 +208,9 @@ _t.start()
 class RpcClient:
 
     def __init__(self, autostart: int = 0):
-        self.last_data = {}
-        self.tasks = []
+        self.last_data: dict = {}
+        self.last_card_payload: dict = {}
+        self.tasks: list = []
         self.main_task = None
         self.config = config
         self.langs = langs
@@ -189,47 +221,38 @@ class RpcClient:
         self.activity_status_display_type = {a.name: a.value for a in ActivityStatusDisplayType}
 
         if os.path.isdir("./langs"):
-
             for f in os.listdir("./langs"):
-
                 if not f.endswith(".json"):
                     continue
-
                 lang_data = self.load_json(f"./langs/{f}")
-
-                if not (lang := f[:-5]) in self.langs:
+                lang = f[:-5]
+                if lang not in self.langs:
                     self.langs[lang] = lang_data
                 else:
                     self.langs[lang].update(lang_data)
 
-        self.users_rpc = {
-            # user -> {bot: presence}
-        }
+        self.users_rpc: dict[int, dict[int, MyDiscordIPC]] = {}
+        self.users_socket: dict[str, set] = {}
+        self.bots_socket: dict[str, set] = {}
 
-        self.users_socket = {
-            # url -> [ids]
-        }
+        self.gui: Optional[RPCGui] = None
 
-        self.bots_socket = {
-            # url -> [ids]
-        }
-
+        app = QApplication.instance() or QApplication(sys.argv)
         self.gui = RPCGui(self, autostart=autostart)
+        self.gui.show()
+        sys.exit(app.exec_())
 
-    def load_json(self, json_file: str):
-
+    def load_json(self, json_file: str) -> dict:
         with open(json_file, encoding="utf-8") as f:
             return json.load(f)
 
     def save_json(self, json_file: str, data: dict):
-
         with open(json_file, "w") as f:
             f.write(json.dumps(data, indent=4))
 
     def get_app_instances(self):
-
+        """Connect to the first available Discord IPC pipe."""
         for i in range(10):
-
             try:
                 rpc = MyDiscordIPC(str(config["dummy_app_id"]), pipe=i)
                 rpc.connect()
@@ -239,43 +262,56 @@ class RpcClient:
             except Exception:
                 continue
 
-            user_id_ = rpc.data['data']['user']['id']
-            user = f"{rpc.data['data']['user']['username']}"
-            user_clients[int(user_id_)] = {"pipe": i, "user": user}
+            user_data  = rpc.data['data']['user']
+            user_id_   = int(user_data['id'])
+            user       = user_data.get('username', '')
+            disp_name  = user_data.get('global_name') or user_data.get('display_name') or user
+            avatar     = user_data.get('avatar', '')
+
+            user_clients[user_id_] = {"pipe": i, "user": user}
             rpc.user = user
-            self.gui.update_log(f"RPC conectado: {user} [{user_id_}] pipe: {i}")
-            if not self.config["load_all_instances"]:
-                break
+
+            self.gui.update_log(f"RPC connected: {disp_name} ({user}) [{user_id_}] pipe: {i}")
+
+            self.gui.update_user_card(
+                user_id     = str(user_id_),
+                avatar_hash = avatar,
+                display_name = disp_name,
+                username    = user,
+            )
+            break
 
         if not user_clients:
-            raise Exception("Não foi detectado nenhuma instância do discord em execução.")
+            raise Exception("No running Discord instance was detected.")
 
     def close_app_instances(self):
-
-        for u_id, u_data in self.users_rpc.items():
-            for b_id, rpc in u_data.items():
+        """Clear presence on all connected pipes before disconnecting."""
+        for u_data in self.users_rpc.values():
+            for rpc in u_data.values():
+                try:
+                    rpc.clear()
+                except Exception:
+                    pass
+                time.sleep(0.05)
                 try:
                     rpc.disconnect()
-                except:
+                except Exception:
                     traceback.print_exc()
-
         self.users_rpc.clear()
         user_clients.clear()
 
     def get_bot_rpc(self, bot_id: int, pipe: int) -> MyDiscordIPC:
-
         rpc = MyDiscordIPC(str(bot_id), pipe=pipe)
         rpc.connect()
         return rpc
 
     def check_presence(self, user_id: int, bot_id: int):
-
-        if not (self.users_rpc.get(user_id)):
+        if not self.users_rpc.get(user_id):
             try:
                 rpc = self.get_bot_rpc(bot_id, user_clients[user_id]["pipe"])
                 self.users_rpc[user_id] = {bot_id: rpc}
                 return
-            except:
+            except Exception:
                 pass
 
         try:
@@ -290,6 +326,16 @@ class RpcClient:
                 return
 
     def exit(self):
+        """Gracefully shut down: clear presence on all pipes, then cancel async tasks."""
+        self.closing = True
+
+        for u_data in list(self.users_rpc.values()):
+            for rpc in list(u_data.values()):
+                try:
+                    rpc.clear()
+                except Exception:
+                    pass
+
         for t in self.tasks:
             loop.call_soon_threadsafe(t.cancel)
         try:
@@ -297,15 +343,14 @@ class RpcClient:
         except AttributeError:
             pass
 
-    def process_data(self, user_id: int, bot_id: int, data: dict, url: str = "", refresh_timestamp=True):
-
+    def process_data(self, user_id: int, bot_id: int, data: dict,
+                     url: str = "", refresh_timestamp=True):
         data = dict(data)
 
         if data['op'] == "update":
             self.update(user_id, bot_id, data, refresh_timestamp=refresh_timestamp)
 
         elif data['op'] == "idle":
-
             try:
                 self.last_data[user_id][bot_id] = dict(data)
             except KeyError:
@@ -317,41 +362,32 @@ class RpcClient:
                 payload["assets"]["large_image"] = self.config["assets"]["idle"]
 
             payload["type"] = ActivityType.playing.value
-
             self.update(user_id, bot_id, payload, refresh_timestamp=refresh_timestamp)
 
         elif data['op'] == "close":
-
             try:
-                self.users_socket[url].remove(user_id)
-            except:
+                self.users_socket[url].discard(user_id)
+            except Exception:
                 pass
-
             try:
                 del self.last_data[user_id][bot_id]
-            except:
+            except Exception:
                 pass
-
             self.update(user_id, bot_id, {})
 
         else:
-            self.gui.update_log(f"unknow op: {data}", tooltip=True, log_type="warning")
+            self.gui.update_log(f"unknown op: {data}", tooltip=True, log_type="warning")
 
     def update(self, user_id: int, bot_id: int, data: dict, refresh_timestamp=True):
-
         current_data = dict(data)
-
-        try:
-            current_data.pop("op")
-        except:
-            pass
+        current_data.pop("op", None)
 
         self.check_presence(user_id, bot_id)
 
         if not current_data:
             try:
                 self.users_rpc[user_id][bot_id].clear()
-            except:
+            except Exception:
                 pass
             return
 
@@ -360,18 +396,35 @@ class RpcClient:
                 "small_image": "https://i.ibb.co/qD5gvKR/cd.gif"
             },
             "timestamps": {},
-            "status_display_type": data.get("type", self.activity_type.get(self.config["activity_type"], ActivityType.playing.value)),
-            "type": data.get("type", self.activity_status_display_type.get(self.config["activity_status_display_type"], ActivityStatusDisplayType.details.value))
+            "type": data.get(
+                "type",
+                self.activity_type.get(
+                    self.config["activity_type"],
+                    ActivityType.playing.value
+                )
+            ),
+            "status_display_type": data.get(
+                "status_display_type",
+                self.activity_status_display_type.get(
+                    self.config["activity_status_display_type"],
+                    ActivityStatusDisplayType.details.value
+                )
+            ),
         }
+
+        if appname:=data.get("name"):
+            payload["name"] = appname
 
         track = current_data.pop("track", None)
         thumb = current_data.pop("thumb", None)
         guild = current_data.pop("guild", "")
-        start_time = current_data.pop("start_time", datetime.datetime.now(datetime.timezone.utc).timestamp())
-
+        start_time = current_data.pop(
+            "start_time",
+            datetime.datetime.now(datetime.timezone.utc).timestamp()
+        )
         listen_along_url = current_data.pop("listen_along_invite", None)
 
-        for d in dict(current_data):
+        for d in list(current_data):
             if d not in valid_presence_fields:
                 del current_data[d]
 
@@ -381,41 +434,40 @@ class RpcClient:
             payload["assets"]["large_image"] = thumb
 
         if track:
-
             playlist_name = track.get("playlist_name")
 
             clear_presence = False
-
             blacklist = self.config["track_blacklist"].lower().split("||")
-
             loop_queue_txt = ""
 
             if blacklist:
                 for word in track["title"].lower().split():
-                    for blacklistword in blacklist:
-                        if word in blacklistword:
+                    for blword in blacklist:
+                        if blword and word in blword:
                             clear_presence = True
 
                 if not clear_presence:
                     blacklist = self.config["uploader_blacklist"].lower().split("||")
-
                     for word in track["author"].lower().split():
-                        for blacklistword in blacklist:
-                            if word in blacklistword:
+                        for blword in blacklist:
+                            if blword and word in blword:
                                 clear_presence = True
 
                 if not clear_presence and playlist_name:
                     blacklist = self.config["playlist_blacklist"].lower().split("||")
                     for word in playlist_name.lower().split():
-                        for blacklistword in blacklist:
-                            if word in blacklistword:
+                        for blword in blacklist:
+                            if blword and word in blword:
                                 clear_presence = True
 
             if clear_presence:
-                self.users_rpc[user_id][bot_id].clear()
+                try:
+                    self.users_rpc[user_id][bot_id].clear()
+                except Exception:
+                    pass
                 return
 
-            if self.config["show_thumbnail"] and track["thumb"]:
+            if self.config["show_thumbnail"] and track.get("thumb"):
                 payload["assets"]["large_image"] = track["thumb"].replace("mqdefault", "default")
 
             payload['details'] = track["title"]
@@ -425,7 +477,6 @@ class RpcClient:
             if not track["paused"]:
 
                 if track["stream"]:
-
                     if track["source"] == "twitch" and self.config["show_platform_icon"]:
                         payload['assets']['small_image'] = self.config["assets"]["sources"][track["source"]]
                         payload['assets']['small_text'] = "Twitch: " + self.get_lang("stream")
@@ -436,8 +487,8 @@ class RpcClient:
                     payload['timestamps']['start'] = track['duration']
 
                 else:
-
-                    endtime = datetime.datetime.now(tz=datetime.timezone.utc) + datetime.timedelta(milliseconds=track["duration"] - track["position"])
+                    endtime = datetime.datetime.now(tz=datetime.timezone.utc) + \
+                              datetime.timedelta(milliseconds=track["duration"] - track["position"])
 
                     payload['timestamps']['end'] = int(endtime.timestamp())
                     payload['timestamps']['start'] = int(start_time)
@@ -445,13 +496,10 @@ class RpcClient:
                     player_loop = track.get('loop')
 
                     if player_loop:
-
                         if player_loop == "queue":
                             loop_queue_txt = self.get_lang('loop_queue')
                             show_platform_icon = True
-
                         else:
-
                             if isinstance(player_loop, list):
                                 loop_text = f"{self.get_lang('loop_text')}: {player_loop[0]}/{player_loop[1]}."
                             elif isinstance(player_loop, int):
@@ -460,41 +508,34 @@ class RpcClient:
                                 loop_text = self.get_lang("loop_text")
 
                             payload['assets']['small_image'] = self.config["assets"]["loop"]
-
                             payload['assets']['small_text'] = loop_text
                     else:
                         show_platform_icon = True
 
                     if show_platform_icon:
-
                         if self.config["show_platform_icon"]:
                             try:
                                 payload['assets']['small_image'] = self.config["assets"]["sources"][track["source"]]
                             except KeyError:
                                 pass
                             payload['assets']['small_text'] = track["source"]
-
                         else:
                             payload['assets']['small_image'] = self.config["assets"]["play"]
                             payload['assets']['small_text'] = self.get_lang("playing")
 
             else:
-
                 payload['assets']['small_image'] = self.config["assets"]["pause"]
                 payload['assets']['small_text'] = self.get_lang("paused")
 
             state = ""
-
             button_dict = {}
 
-            if (url := track.get("url")) and self.config["show_listen_button"]:
+            if (url_track := track.get("url")) and self.config["show_listen_button"]:
                 if not self.config["playlist_refs"]:
-                    url = url.split("&list=")[0]
-
-                url = url.replace("www.", "")
-
-                payload["assets"]["large_url"] = url
-                payload["details_url"] = url
+                    url_track = url_track.split("&list=")[0]
+                url_track = url_track.replace("www.", "")
+                payload["assets"]["large_url"] = url_track
+                payload["details_url"] = url_track
 
             state += f'👤{self.get_lang("author")}: {track["author"]}'
 
@@ -504,74 +545,80 @@ class RpcClient:
             large_image_desc = []
 
             if playlist_name and playlist_url:
-
                 playlist_translation = self.get_lang("playlist")
 
                 if self.config["show_playlist_button"]:
-
                     playlist_index = self.config["button_order"].index('playlist_button')
+                    character_limit = (
+                        self.config["button_character_limit"]
+                        if emoji.emoji_count(playlist_name) < 1
+                        else (self.config["button_character_limit"] - 7)
+                    )
 
-                    character_limit = self.config["button_character_limit"] if emoji.emoji_count(
-                        playlist_name) < 1 else (self.config["button_character_limit"] - 7)
-
-                    if not self.config["show_playlist_name_in_button"] or (playlist_name_size:=len(playlist_name)) > character_limit:
+                    if not self.config["show_playlist_name_in_button"] or \
+                            (playlist_name_size := len(playlist_name)) > character_limit:
                         button_dict[playlist_index] = {
-                            "label": self.get_lang("view_playlist"), "url": playlist_url.replace("www.", "")}
-
+                            "label": self.get_lang("view_playlist"),
+                            "url": playlist_url.replace("www.", "")
+                        }
                     else:
-
-                        if ((len(playlist_translation) + playlist_name_size + 2)) > character_limit:
+                        if (len(playlist_translation) + playlist_name_size + 2) > character_limit:
                             button_dict[playlist_index] = {
-                                "label": playlist_name, "url": playlist_url.replace("www.", "")}
+                                "label": playlist_name,
+                                "url": playlist_url.replace("www.", "")
+                            }
                         else:
                             button_dict[playlist_index] = {
-                                "label": f"{playlist_translation}: {playlist_name}", "url": playlist_url.replace("www.", "")}
+                                "label": f"{playlist_translation}: {playlist_name}",
+                                "url": playlist_url.replace("www.", "")
+                            }
 
                 elif self.config["show_playlist_text"]:
-                    playlist_txt = f"{playlist_translation}: {playlist_name}"
-                    large_image_desc.append(playlist_txt)
+                    large_image_desc.append(f"{playlist_translation}: {playlist_name}")
 
             if album_url:
-
                 album_txt = f'{self.get_lang("album")}: {album_name}'
+                char_limit = self.config["button_character_limit"]
 
-                if len(album_txt) < self.config["button_character_limit"]:
+                if len(album_txt) < char_limit:
                     album_button = {"label": album_txt, "url": album_url}
-                elif len(album_name) < self.config["button_character_limit"]:
+                elif len(album_name) < char_limit:
                     album_button = {"label": album_name, "url": album_url}
                 else:
-                    album_button = {"label": (album_name[:self.config["button_character_limit"]-3] + "..."), "url": album_url}
+                    album_button = {"label": album_name[:char_limit - 3] + "...", "url": album_url}
 
                 button_dict[self.config["button_order"].index('album_button')] = album_button
 
                 if payload["type"] != ActivityType.listening.value:
                     large_image_desc.append(f"📀{album_txt}")
 
-            if not track["stream"] and (track["source"] not in ("lastfm", "http", "local")):
-
+            if not track["stream"] and track["source"] not in ("lastfm", "http", "local"):
                 if track["source"] == "youtube":
-                    if track["author"].endswith(" - topic") and not track["author"].endswith(
-                            "Release - topic") and not track["title"].startswith(track['author'][:-8]):
-                        title = track["title"]
-                        author = track["author"][:-8]
+                    if (track["author"].endswith(" - topic")
+                            and not track["author"].endswith("Release - topic")
+                            and not track["title"].startswith(track['author'][:-8])):
+                        title_lf = track["title"]
+                        author_lf = track["author"][:-8]
                     else:
                         try:
-                            author, title = track["title"].split(" - ", maxsplit=1)
+                            author_lf, title_lf = track["title"].split(" - ", maxsplit=1)
                         except ValueError:
-                            title = track["title"]
-                            author = track["author"]
+                            title_lf = track["title"]
+                            author_lf = track["author"]
                 else:
-                    title = track["title"]
-                    author = track["author"]
+                    title_lf = track["title"]
+                    author_lf = track["author"]
 
                 button_dict[self.config["button_order"].index('open_lastfm')] = {
                     "label": f"{self.get_lang('listen_on')} Last.FM",
-                    "url": f"https://www.last.fm/music/{quote(author.split(',')[0])}/_/{quote(title)}"
+                    "url": f"https://www.last.fm/music/{quote(author_lf.split(',')[0])}/_/{quote(title_lf)}"
                 }
 
             try:
                 if track["queue"] and self.config["enable_queue_text"]:
-                    large_image_desc.append(f'🎶{self.get_lang("queue").replace("{queue}", str(track["queue"]))}')
+                    large_image_desc.append(
+                        f'🎶{self.get_lang("queue").replace("{queue}", str(track["queue"]))}'
+                    )
             except KeyError:
                 pass
 
@@ -594,48 +641,59 @@ class RpcClient:
                 payload['assets']['large_text'] = " | ".join(large_image_desc)
 
             if self.config['show_listen_along_button'] and listen_along_url:
-                button_dict[self.config["button_order"].index('listen_along_button')] = {"label": self.get_lang("listen_along"), "url": listen_along_url}
+                button_dict[self.config["button_order"].index('listen_along_button')] = {
+                    "label": self.get_lang("listen_along"), "url": listen_along_url
+                }
 
-            if lastfm_user:=data.get("lastfm_user"):
-                button_dict[self.config["button_order"].index('lastfm_profile')] = {"label": f"Last.fm: {lastfm_user[:20]}", "url": f"https://www.last.fm/user/{lastfm_user}"}
+            if lastfm_user := data.get("lastfm_user"):
+                button_dict[self.config["button_order"].index('lastfm_profile')] = {
+                    "label": f"Last.fm: {lastfm_user[:20]}",
+                    "url": f"https://www.last.fm/user/{lastfm_user}"
+                }
 
             if button_dict:
-
-                button_dict = {key: value for key, value in sorted(button_dict.items(), key=lambda k: k)[:2]}
-
-
-                payload["buttons"] = [v for v in button_dict.values()]
+                button_dict = {
+                    k: v for k, v in sorted(button_dict.items(), key=lambda x: x[0])[:2]
+                }
+                payload["buttons"] = list(button_dict.values())
 
             if loop_queue_txt:
                 state += f" | 🔄{loop_queue_txt}"
 
-            if not state:
-                payload['state'] = "   "
-            else:
-                payload['state'] = state[:128]
+            payload['state'] = state[:128] if state else "   "
 
         try:
-            if track and not track.get('autoplay') and (self.config["block_other_users_track"] and track["requester_id"] != user_id):
+            if track and not track.get('autoplay') and \
+                    self.config["block_other_users_track"] and \
+                    track["requester_id"] != user_id:
                 self.users_rpc[user_id][bot_id].clear()
             else:
                 self.users_rpc[user_id][bot_id].update_activity(payload)
+                self.last_card_payload = {
+                    "payload": dict(payload),
+                    "track": dict(track) if track else None,
+                    "guild": guild,
+                }
+                self.gui.update_presence_card(
+                    payload=payload,
+                    track=track,
+                    app_name=appname,
+                )
 
         except IPCError:
-
             used_pipes = [i["pipe"] for u, i in user_clients.items() if u != user_id]
 
             for i in range(12):
-
                 if i in used_pipes:
                     continue
-
                 try:
                     rpc = self.get_bot_rpc(bot_id, i)
-                    rpc.connect()
                     self.users_rpc[user_id][bot_id] = rpc
                     user_clients[user_id]["pipe"] = i
                     self.update(user_id, bot_id, data, refresh_timestamp=refresh_timestamp)
-                    self.gui.update_log(f"RPC reconectado ao discord: {user_clients[user_id]['user']} | pipe: {i}")
+                    self.gui.update_log(
+                        f"RPC reconnected: {user_clients[user_id]['user']} | pipe: {i}"
+                    )
                     return
                 except Exception:
                     traceback.print_exc()
@@ -649,10 +707,8 @@ class RpcClient:
             self.gui.update_log(repr(e), exception=e)
             pprint.pprint(payload)
 
-    def get_idle_data(self, bot_id: int, data: dict):
-
+    def get_idle_data(self, bot_id: int, data: dict) -> dict:
         data = dict(data)
-
         text_idle = self.get_lang("idle")
 
         payload = {
@@ -664,7 +720,10 @@ class RpcClient:
         }
 
         try:
-            payload["timestamps"] = {"end": data["idle_endtime"], "start": data["idle_starttime"]}
+            payload["timestamps"] = {
+                "end": data["idle_endtime"],
+                "start": data["idle_starttime"]
+            }
         except KeyError:
             pass
 
@@ -672,19 +731,24 @@ class RpcClient:
             payload['state'] = text_idle[1]
 
         buttons = []
-
         public = data.pop("public", True)
         support_server = data.pop("support_server", None)
 
         if public and self.config["bot_invite"]:
-            invite = f"https://discord.com/api/oauth2/authorize?client_id={bot_id}&" \
-                     f"permissions={data.pop('invite_permissions', 8)}&scope=bot%20applications.commands"
+            invite = (
+                f"https://discord.com/api/oauth2/authorize?client_id={bot_id}"
+                f"&permissions={data.pop('invite_permissions', 8)}"
+                f"&scope=bot%20applications.commands"
+            )
             buttons.append({"label": self.get_lang("invite"), "url": invite})
             if support_server:
                 buttons.append({"label": self.get_lang("support_server"), "url": support_server})
 
         if len(buttons) < 2 and (lastfm_user := data.get("lastfm_user")):
-            buttons.append({"label": f"Last.fm: {lastfm_user[:20]}", "url": f"https://www.last.fm/user/{lastfm_user}"})
+            buttons.append({
+                "label": f"Last.fm: {lastfm_user[:20]}",
+                "url": f"https://www.last.fm/user/{lastfm_user}"
+            })
 
         if buttons:
             payload["buttons"] = buttons
@@ -692,93 +756,72 @@ class RpcClient:
         return payload
 
     def get_lang(self, key: str) -> str:
-
         try:
-            lang = self.langs[self.config["language"]]
-            txt: str = lang.get(key)
+            txt = self.langs[self.config["language"]].get(key)
             if not txt:
                 txt = self.langs["en-us"].get(key)
         except KeyError:
-            txt = self.langs["en-us"].get(key)
-        return txt
+            txt = self.langs["en-us"].get(key, key)
+        return txt or key
 
     def clear_users_presences(self, uri: str):
-
-        for bot_id in self.bots_socket[uri]:
-            for user_id in self.users_socket[uri]:
+        for bot_id in self.bots_socket.get(uri, []):
+            for user_id in self.users_socket.get(uri, []):
                 try:
                     self.users_rpc[user_id][bot_id].clear()
-                except:
+                except Exception:
                     continue
 
-    async def handle_socket(self, uri):
-
+    async def handle_socket(self, uri: str):
         backoff = 7
 
         while True:
-
             try:
+                async with self.session.ws_connect(
+                    uri, heartbeat=self.config["heartbeat"], timeout=120
+                ) as ws:
 
-                async with self.session.ws_connect(uri, heartbeat=self.config["heartbeat"], timeout=120) as ws:
+                    self.users_socket.setdefault(uri, set()).clear()
+                    self.bots_socket.setdefault(uri, set()).clear()
 
-                    try:
-                        self.users_socket[uri].clear()
-                    except:
-                        pass
+                    self.gui.update_log(f"WebSocket connected: {uri}", tooltip=True)
 
-                    try:
-                        self.bots_socket[uri].clear()
-                    except:
-                        pass
-
-                    self.bots_socket[uri] = set()
-                    self.users_socket[uri] = set()
-
-                    self.gui.update_log(f"Websocket conectado: {uri}", tooltip=True)
-
-                    await ws.send_str(
-                        json.dumps(
-                            {
-                                "op": "rpc_update",
-                                "user_ids": list(user_clients),
-                                "token": self.config["token"].replace(" ", "").replace("\n", ""),
-                                "version": version
-                            }
-                        )
-                    )
+                    await ws.send_str(json.dumps({
+                        "op": "rpc_update",
+                        "user_ids": list(user_clients),
+                        "token": self.config["token"].replace(" ", "").replace("\n", ""),
+                        "version": version,
+                    }))
 
                     async for msg in ws:
-
                         try:
-
                             if msg.type == aiohttp.WSMsgType.TEXT:
-
                                 try:
                                     data = json.loads(msg.data)
                                 except Exception:
                                     traceback.print_exc()
                                     continue
 
-                                try:
-                                    if not data['op']:
-                                        print(data)
-                                        continue
-                                except:
-                                    traceback.print_exc()
+                                if not data.get('op'):
+                                    print(data)
                                     continue
 
                                 bot_id = data.pop("bot_id", None)
-
                                 if self.config["override_appid"]:
                                     bot_id = int(self.config["dummy_app_id"])
 
                                 bot_name = data.pop("bot_name", None)
 
                                 if data['op'] == "disconnect":
-                                    self.gui.update_log(f"op: {data['op']} | {uri} | reason: {data.get('reason')}",
-                                                        log_type="error")
+                                    self.gui.update_log(
+                                        f"op: {data['op']} | {uri} | reason: {data.get('reason')}",
+                                        log_type="error"
+                                    )
                                     self.closing = True
-                                    await ws.close()
+                                    try:
+                                        await ws.close(code=1000, message=b"disconnect requested")
+                                    except Exception:
+                                        pass
                                     return
 
                                 if bot_id:
@@ -789,7 +832,6 @@ class RpcClient:
                                             self.bots_socket[uri].add(i)
 
                                 user_ws = data.pop("user", None)
-
                                 if not user_ws:
                                     continue
 
@@ -801,98 +843,90 @@ class RpcClient:
                                     continue
 
                                 if data['op'] == "exception":
-                                    self.gui.update_log(f"op: {data['op']} | {user} {user_ws} | "
-                                                        f"bot: {(bot_name + ' ') if bot_name else ''}[{bot_id}] | "
-                                                        f"\nerror: {data.get('message')}",
-                                                        log_type="error")
+                                    self.gui.update_log(
+                                        f"op: {data['op']} | {user} {user_ws} | "
+                                        f"bot: {(bot_name + ' ') if bot_name else ''}[{bot_id}] | "
+                                        f"\nerror: {data.get('message')}",
+                                        log_type="error"
+                                    )
                                     continue
 
-                                self.gui.update_log(f"op: {data['op']} | {user} {user_ws} | "
-                                                    f"bot: {(bot_name + ' ') if bot_name else ''}[{bot_id}]",
-                                                    log_type="info")
+                                self.gui.update_log(
+                                    f"op: {data['op']} | {user} {user_ws} | "
+                                    f"bot: {(bot_name + ' ') if bot_name else ''}[{bot_id}]",
+                                    log_type="info"
+                                )
+
+                                data["name"] = bot_name
 
                                 try:
                                     self.last_data[user_ws][bot_id] = data
                                 except KeyError:
                                     self.last_data[user_ws] = {bot_id: data}
 
-                                try:
-                                    del data["token"]
-                                except KeyError:
-                                    pass
-
+                                data.pop("token", None)
                                 self.process_data(user_ws, bot_id, data, url=uri)
 
-                            elif msg.type in (aiohttp.WSMsgType.CLOSED,
-                                              aiohttp.WSMsgType.CLOSING,
-                                              aiohttp.WSMsgType.CLOSE):
-
-                                self.gui.update_log(f"Conexão finalizada com o servidor: {uri}")
+                            elif msg.type in (
+                                aiohttp.WSMsgType.CLOSED,
+                                aiohttp.WSMsgType.CLOSING,
+                                aiohttp.WSMsgType.CLOSE,
+                            ):
+                                self.gui.update_log(f"Connection closed by server: {uri}")
+                                if self.closing:
+                                    return
                                 return
 
                             elif msg.type == aiohttp.WSMsgType.ERROR:
-
                                 self.clear_users_presences(uri)
-
                                 if self.closing:
                                     return
-
                                 self.gui.update_log(
-                                    f"Conexão perdida com o servidor: {uri} | Reconectando em {time_format(backoff)} seg. {repr(ws.exception())}",
-                                    tooltip=True, log_type="error")
-
+                                    f"Connection lost: {uri} | Reconnecting in "
+                                    f"{time_format(backoff * 1000)} sec. {repr(ws.exception())}",
+                                    tooltip=True, log_type="error"
+                                )
                                 await asyncio.sleep(backoff)
                                 backoff *= 1.3
 
                             else:
-                                self.gui.update_log(
-                                    f"Unknow message type: {msg.type}",
-                                    log_type="warning"
-                                )
+                                self.gui.update_log(f"Unknown message type: {msg.type}", log_type="warning")
 
                         except Exception as e:
                             traceback.print_exc()
-                            self.gui.update_log(
-                                f"Ocorreu um erro no link: {uri}\n{repr(e)}.",
-                                log_type="error"
-                            )
+                            self.gui.update_log(f"Error on {uri}\n{repr(e)}.", log_type="error")
 
                     self.gui.update_log(
-                        f"Desconectado: {uri} | Nova tentativa de conexão em "
-                        f"{time_format(self.config['reconnect_timeout']*1000)}...",
+                        f"Disconnected: {uri} | Reconnecting in "
+                        f"{time_format(self.config['reconnect_timeout'] * 1000)}...",
                         log_type="warning"
                     )
                     self.clear_users_presences(uri)
                     await asyncio.sleep(self.config['reconnect_timeout'])
 
             except (aiohttp.WSServerHandshakeError, aiohttp.ClientConnectorError):
-
                 tm = backoff * 5
-
                 self.gui.update_log(
-                    f"Servidor indisponível: {uri} | Nova tentativa de conexão em {time_format(tm*1000)}.",
+                    f"Server unavailable: {uri} | Retrying in {time_format(tm * 1000)}.",
                     log_type="warning"
                 )
                 await asyncio.sleep(tm)
                 backoff *= 2
 
             except Exception as e:
-
                 traceback.print_exc()
-                self.gui.update_log(f"Erro na conexão: {uri} | {repr(e)}", tooltip=True, log_type="error")
+                self.gui.update_log(f"Connection error: {uri} | {repr(e)}", tooltip=True, log_type="error")
                 self.clear_users_presences(uri)
                 await asyncio.sleep(60)
 
     async def create_session(self):
-
         if not self.session:
             self.session = aiohttp.ClientSession()
 
     async def handler(self):
-
         await self.create_session()
-
-        self.tasks = [loop.create_task(self.handle_socket(uri)) for uri in list(set(self.config["urls"]))]
+        urls = list(set(self.config["urls"]))
+        self.tasks = [loop.create_task(self.handle_socket(uri)) for uri in urls]
         await asyncio.wait(self.tasks)
 
     def start_ws(self):
@@ -900,9 +934,14 @@ class RpcClient:
 
 
 if __name__ == "__main__":
+    acquire_single_instance_lock()
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('-autostart', type=int, help='Iniciar presence automaticamente (tempo mínimo: 15)', default=0)
+    parser.add_argument(
+        '-autostart', type=int,
+        help='Auto-start presence on launch (minimum delay: 15 seconds)',
+        default=0,
+    )
     args = parser.parse_args()
 
     RpcClient(autostart=args.autostart)

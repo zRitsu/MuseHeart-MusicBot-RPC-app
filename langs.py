@@ -1,4 +1,5 @@
-# Nota: VocÊ pode criar um arquivo na pasta langs com o nome (ex: pt-br.json) para adicionar novas traduções ou para alterar uma tradução existente.
+# To add or override translations, create a JSON file in the langs/ folder
+# named after the language code (e.g. pt-br.json).
 
 langs = {
     "en-us": {

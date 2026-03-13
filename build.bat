@@ -7,5 +7,5 @@ if not exist venv (
 )
 
 ::pyinstaller -F -i icon.ico -c --noconsole rpc_client.py
-pyinstaller -F -i icon.ico -c rpc_client.py
+pyinstaller -F -i gui\res\icon.ico -c rpc_client.py
 pause
